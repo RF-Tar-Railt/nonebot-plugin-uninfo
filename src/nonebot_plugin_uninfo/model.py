@@ -1,7 +1,7 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import IntEnum
-from typing import Any, Union, Optional
+from typing import Union, Optional
 
 from nonebot.adapters import Adapter
 
@@ -10,9 +10,13 @@ from.constraint import SupportScope, SupportAdapter
 
 class ChannelType(IntEnum):
     TEXT = 0
+    """文本频道"""
     DIRECT = 1
+    """私聊频道"""
     CATEGORY = 2
+    """分类频道"""
     VOICE = 3
+    """语音频道"""
 
 
 @dataclass
@@ -61,10 +65,11 @@ class MuteInfo:
 @dataclass
 class Member:
     id: str
-    nick: Optional[str] = None
+    nick: str
     """群员昵称"""
+    role: Role
+    """群员角色"""
     avatar: Optional[str] = None
-    role: Optional[Role] = None
     mute: Optional[MuteInfo] = None
     joined_at: Optional[datetime] = None
 
@@ -76,10 +81,11 @@ class Session:
     adapter: Union[str, type[Adapter], SupportAdapter]
     """适配器名称，若为 None 则需要明确指定 Bot 对象"""
 
-    guild: Guild
     channel: Channel
     user: User
+    guild: Optional[Guild] = None
     member: Optional[Member] = None
+
     scope: Union[str, SupportScope, None] = None
     """适配器范围，相比 adapter 更指向实际平台"""
     platform: Union[str, set[str], None] = None
@@ -91,7 +97,8 @@ class Session:
 
     @property
     def is_channel(self) -> bool:
-        return self.channel.id == self.guild.id
+        return bool(self.guild) and self.channel.id != self.guild.id
+
 
 # @dataclass
 # class Scene:
