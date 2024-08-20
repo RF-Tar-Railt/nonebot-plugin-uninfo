@@ -65,9 +65,9 @@ class MuteInfo:
 @dataclass
 class Member:
     id: str
-    nick: str
+    nick: Optional[str] = None
     """群员昵称"""
-    role: Role
+    role: Optional[Role] = None
     """群员角色"""
     avatar: Optional[str] = None
     mute: Optional[MuteInfo] = None
@@ -80,14 +80,15 @@ class Session:
     """机器人id"""
     adapter: Union[str, type[Adapter], SupportAdapter]
     """适配器名称，若为 None 则需要明确指定 Bot 对象"""
+    scope: Union[str, SupportScope]
+    """适配器范围，相比 adapter 更指向实际平台"""
 
     channel: Channel
     user: User
     guild: Optional[Guild] = None
     member: Optional[Member] = None
 
-    scope: Union[str, SupportScope, None] = None
-    """适配器范围，相比 adapter 更指向实际平台"""
+
     platform: Union[str, set[str], None] = None
     """平台名称，仅当目标适配器存在多个平台时使用"""
 

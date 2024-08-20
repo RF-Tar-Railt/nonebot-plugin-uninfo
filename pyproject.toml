@@ -85,3 +85,12 @@ disableBytesTypePromotions = true
 
 [tool.pdm.scripts]
 format = { composite = ["isort ./src/ ","black ./src/ ","ruff check ./src/"] }
+
+
+[tool.nonebot]
+adapters = [
+    { name = "OneBot V11", module_name = "nonebot.adapters.onebot.v11" }
+]
+plugins = ["example"]
+plugin_dirs = []
+builtin_plugins = []
