@@ -64,14 +64,17 @@ class MuteInfo:
 
 @dataclass
 class Member:
-    id: str
+    user: User
     nick: Optional[str] = None
     """群员昵称"""
     role: Optional[Role] = None
     """群员角色"""
-    avatar: Optional[str] = None
     mute: Optional[MuteInfo] = None
     joined_at: Optional[datetime] = None
+
+    @property
+    def id(self) -> str:
+        return self.user.id
 
 
 @dataclass
@@ -87,6 +90,7 @@ class Session:
     user: User
     guild: Optional[Guild] = None
     member: Optional[Member] = None
+    operator: Optional[Member] = None
 
 
     platform: Union[str, set[str], None] = None

@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod
-from typing import Callable, TypeVar, Optional, TypedDict, Any
-from typing_extensions import Required
+from typing import Callable, TypeVar, Optional, TypedDict, Any, Union, get_type_hints, get_origin, get_args
+from typing_extensions import Required, NotRequired
 from collections.abc import Awaitable, AsyncGenerator
 
 from nonebot.adapters import Event, Bot
@@ -10,6 +10,8 @@ from .model import Session, User, Channel, Guild, Member
 
 TE = TypeVar("TE", bound=Event)
 TB = TypeVar("TB", bound=Bot)
+Supplier = Callable[[TB, TE], Awaitable[dict]]
+TSupplier = TypeVar("TSupplier", bound=Supplier)
 
 
 class SuppliedData(TypedDict, total=False):
@@ -17,18 +19,23 @@ class SuppliedData(TypedDict, total=False):
     adapter: Required[SupportAdapter]
     scope: Required[SupportScope]
 
+    operator: NotRequired[dict]
+
 
 class InfoFetcher(metaclass=ABCMeta):
     def __init__(self, adapter: SupportAdapter):
         self.adapter = adapter
         self.endpoint: dict[type[Event], Callable[[Bot, Event], Awaitable[SuppliedData]]] = {}
 
-    def register(self, event: type[TE]):# -> Callable[..., Callable[[TB, TE], Awaitable[Session]]]:
-        def decorator(func: Callable[[TB, TE], Awaitable[dict]]):
-            self.endpoint[event] = func  # type: ignore
-            return func
-        return decorator
-    
+    def supply(self, func: TSupplier) -> TSupplier:
+        event_type = get_type_hints(func)["event"]
+        if get_origin(event_type) is Union:
+            for t in get_args(event_type):
+                self.endpoint[t] = func  # type: ignore
+        else:
+            self.endpoint[event_type] = func  # type: ignore
+        return func
+
     @abstractmethod
     def extract_user(self, data: dict[str, Any]) -> User:
         pass
@@ -42,18 +49,20 @@ class InfoFetcher(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def extract_member(self, data: dict[str, Any]) -> Optional[Member]:
+    def extract_member(self, data: dict[str, Any], user: Optional[User]) -> Optional[Member]:
         pass
 
     def parse(self, data: SuppliedData) -> Session:
+        user = self.extract_user(data)  # type: ignore
         return Session(
             self_id=data["self_id"],
             adapter=data["adapter"],
             scope=data["scope"],
-            user=self.extract_user(data),  # type: ignore
+            user=user,
             channel=self.extract_channel(data),  # type: ignore
             guild=self.extract_guild(data),  # type: ignore
-            member=self.extract_member(data)  # type: ignore
+            member=self.extract_member(data, user),  # type: ignore
+            operator=self.extract_member(data["operator"], None) if "operator" in data else None  # type: ignore
         )
 
 
