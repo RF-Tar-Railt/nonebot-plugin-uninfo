@@ -31,7 +31,7 @@ class Channel:
     id: str
     type: ChannelType
     name: Optional[str] = None
-    parent: Optional[Guild] = None
+    parent_id: Optional[str] = None
 
 
 @dataclass
