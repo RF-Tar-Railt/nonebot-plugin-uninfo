@@ -5,7 +5,7 @@ from collections.abc import Awaitable, AsyncGenerator
 
 from nonebot.adapters import Event, Bot
 from .constraint import SupportAdapter, SupportScope
-from .model import Session, User, Channel, Guild, Member
+from .model import Session, User, Scene, Member
 
 
 TE = TypeVar("TE", bound=Event)
@@ -41,11 +41,7 @@ class InfoFetcher(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def extract_channel(self, data: dict[str, Any]) -> Channel:
-        pass
-
-    @abstractmethod
-    def extract_guild(self, data: dict[str, Any]) -> Optional[Guild]:
+    def extract_scene(self, data: dict[str, Any]) -> Scene:
         pass
 
     @abstractmethod
@@ -59,8 +55,7 @@ class InfoFetcher(metaclass=ABCMeta):
             adapter=data["adapter"],
             scope=data["scope"],
             user=user,
-            channel=self.extract_channel(data),  # type: ignore
-            guild=self.extract_guild(data),  # type: ignore
+            scene=self.extract_scene(data),  # type: ignore
             member=self.extract_member(data, user),  # type: ignore
             operator=self.extract_member(data["operator"], None) if "operator" in data else None  # type: ignore
         )
@@ -78,11 +73,7 @@ class InfoFetcher(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def query_channel(self, bot: Bot, guild_id: str) -> AsyncGenerator[Channel, None]:
-        pass
-
-    @abstractmethod
-    def query_guild(self, bot: Bot) -> AsyncGenerator[Guild, None]:
+    def query_scene(self, bot: Bot, guild_id: Optional[str]) -> AsyncGenerator[Scene, None]:
         pass
 
     @abstractmethod

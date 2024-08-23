@@ -9,10 +9,9 @@ async def inspect(session: Uninfo):
     await matcher.send(
         f"Self: {session.self_id}\n"
         f"Adapter: {session.adapter}\n"
-        f"IsPrivate: {session.is_private}\n"
+        f"Type: {session.scene.type.name}\n"
         f"User: {session.user.id}\n"
-        f"Channel: {session.channel.id}\n"
-        f"Guild: {session.guild.id if session.guild else 'None'}\n"
+        f"Scene: {session.scene.id}\n"
         f"Member: {session.member.id if session.member else 'None'}"
     )
 
@@ -24,9 +23,8 @@ async def inspect1(session: Uninfo):
     await matcher.send(
         f"Self: {session.self_id}\n"
         f"Adapter: {session.adapter}\n"
-        f"IsPrivate: {session.is_private}\n"
+        f"Type: {session.scene.type.name}\n"
         f"User: {session.user.id}\n"
-        f"Channel: {session.channel.id}\n"
-        f"Guild: {session.guild.id if session.guild else 'None'}\n"
+        f"Scene: {session.scene.id}\n"
         f"Member: {session.member.id if session.member else 'None'}"
     )    

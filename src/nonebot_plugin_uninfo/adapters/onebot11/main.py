@@ -4,7 +4,7 @@ from typing import Optional, Union
 from nonebot.adapters import Bot
 from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
 from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
-from nonebot_plugin_uninfo.model import ChannelType, User, Guild, Channel, Role, Member, MuteInfo, Session
+from nonebot_plugin_uninfo.model import SceneType, User, Scene, Role, Member, MuteInfo, Session
 
 from nonebot.adapters.onebot.v11 import Bot
 from nonebot.exception import ActionFailed
@@ -42,24 +42,16 @@ class InfoFetcher(BaseInfoFetcher):
             avatar=f"http://q1.qlogo.cn/g?b=qq&nk={data['user_id']}&s=640",
             gender=data.get("gender", "unknown"),
         )
-    
-    def extract_channel(self, data):
+
+    def extract_scene(self, data):
         if "group_id" not in data:
-            return Channel(
+            return Scene(
                 id=data["user_id"],
-                type=ChannelType.DIRECT,
+                type=SceneType.PRIVATE,
             )
-        return Channel(
+        return Scene(
             id=data["group_id"],
-            type=ChannelType.TEXT,
-            name=data["group_name"],
-        )
-    
-    def extract_guild(self, data):
-        if "group_id" not in data:
-            return None
-        return Guild(
-            id=data["group_id"],
+            type=SceneType.GROUP,
             name=data["group_name"],
             avatar=f"https://p.qlogo.cn/gh/{data['group_id']}/{data['group_id']}/"
         )
@@ -104,24 +96,15 @@ class InfoFetcher(BaseInfoFetcher):
             }
             yield self.extract_user(data)
 
-    async def query_channel(self, bot: Bot, guild_id: str):
+    async def query_scene(self, bot: Bot, guild_id: Optional[str]):
         groups = await bot.get_group_list()
         for group in groups:
-            if group["group_id"] == guild_id:
+            if not guild_id or group["group_id"] == guild_id:
                 data = {
                     "group_id": str(group["group_id"]),
                     "group_name": group["group_name"],
                 }
-                yield self.extract_channel(data)
-
-    async def query_guild(self, bot: Bot):
-        groups = await bot.get_group_list()
-        for group in groups:
-            data = {
-                "group_id": str(group["group_id"]),
-                "group_name": group["group_name"],
-            }
-            yield self.extract_guild(data)
+                yield self.extract_scene(data)
 
     async def query_member(self, bot: Bot, guild_id: str):
         members = await bot.get_group_member_list(group_id=int(guild_id))
