@@ -76,6 +76,9 @@ class MuteInfo:
     start_at: Optional[datetime] = None
     """禁言开始时间"""
 
+    def __post_init__(self):
+        if self.duration.total_seconds() < 1:
+            self.muted = False
 
 @dataclass
 class Member:

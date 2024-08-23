@@ -99,7 +99,7 @@ class InfoFetcher(BaseInfoFetcher):
     async def query_scene(self, bot: Bot, guild_id: Optional[str]):
         groups = await bot.get_group_list()
         for group in groups:
-            if not guild_id or group["group_id"] == guild_id:
+            if not guild_id or str(group["group_id"]) == guild_id:
                 data = {
                     "group_id": str(group["group_id"]),
                     "group_name": group["group_name"],
