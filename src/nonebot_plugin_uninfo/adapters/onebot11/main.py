@@ -4,7 +4,7 @@ from typing import Optional, Union
 from nonebot.adapters import Bot
 from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
 from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
-from nonebot_plugin_uninfo.model import SceneType, User, Scene, Role, Member, MuteInfo, Session
+from nonebot_plugin_uninfo.model import SceneType, User, Scene, Role, Member, MuteInfo
 
 from nonebot.adapters.onebot.v11 import Bot
 from nonebot.exception import ActionFailed

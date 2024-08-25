@@ -4,16 +4,44 @@ from typing import Optional, Union
 from nonebot.adapters import Bot
 from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
 from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
-from nonebot_plugin_uninfo.model import SceneType, User, Scene, Role, Member, MuteInfo, Session
+from nonebot_plugin_uninfo.model import SceneType, User, Scene, Role, Member, MuteInfo
 
 from nonebot.adapters.mirai import Bot
 from nonebot.exception import ActionFailed
-from nonebot.adapters.mirai.model.relationship import MemberPerm
+from nonebot.adapters.mirai.model.relationship import MemberPerm, Group
 from nonebot.adapters.mirai.event import (
     FriendMessage,
     GroupMessage,
     TempMessage,
     StrangerMessage,
+    BotJoinGroupEvent,
+    BotMuteEvent,
+    BotUnmuteEvent,
+    BotLeaveEventKick,
+    BotLeaveEventDisband,
+    GroupNameChangeEvent,
+    GroupEntranceAnnouncementChangeEvent,
+    GroupMuteAllEvent,
+    GroupAllowMemberInviteEvent,
+    FriendAddEvent,
+    FriendDeleteEvent,
+    FriendInputStatusChangedEvent,
+    FriendNickChangedEvent,
+    FriendRecallEvent,
+    GroupRecallEvent,
+    NudgeEvent,
+    MemberJoinEvent,
+    MemberLeaveEventKick,
+    MemberLeaveEventQuit,
+    MemberCardChangeEvent,
+    MemberSpecialTitleChangeEvent,
+    MemberPermissionChangeEvent,
+    MemberMuteEvent,
+    MemberUnmuteEvent,
+    MemberHonorChangeEvent,
+    NewFriendRequestEvent,
+    MemberJoinRequestEvent,
+    BotInvitedJoinGroupRequestEvent
 )
 
 
@@ -135,7 +163,7 @@ async def _(bot: Bot, event: FriendMessage):
         sex = "unknown"
     return {
         "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.onebot11,
+        "adapter": SupportAdapter.mirai,
         "scope": SupportScope.qq_client,
         "user_id": str(event.sender.id),
         "name": event.sender.nickname,
@@ -152,7 +180,7 @@ async def _(bot: Bot, event: StrangerMessage):
         sex = "unknown"
     return {
         "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.onebot11,
+        "adapter": SupportAdapter.mirai,
         "scope": SupportScope.qq_client,
         "user_id": str(event.sender.id),
         "name": event.sender.nickname,
@@ -169,7 +197,7 @@ async def _(bot: Bot, event: Union[GroupMessage, TempMessage]):
         nickname = event.sender.name
     return {
         "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.onebot11,
+        "adapter": SupportAdapter.mirai,
         "scope": SupportScope.qq_client,
         "group_id": str(event.group.id),
         "group_name": event.group.name,
@@ -179,4 +207,379 @@ async def _(bot: Bot, event: Union[GroupMessage, TempMessage]):
         "role": event.sender.permission,
         "join_time": event.sender.join_timestamp,
         "mute_duration": event.sender.mute_time
+    }
+
+
+@fetcher.supply
+async def _(bot: Bot, event: BotJoinGroupEvent):
+    self_info = await bot.get_bot_profile()
+    if not event.inviter:
+        return {
+            "self_id": str(bot.self_id),
+            "adapter": SupportAdapter.mirai,
+            "scope": SupportScope.qq_client,
+            "user_id": str(bot.self_id),
+            "name": self_info.nickname,
+            "card": self_info.nickname,
+            "role": event.group.account_perm,
+        }
+    try:
+        inviter_info = await bot.get_member_profile(group=event.group.id, member=event.inviter.id)
+        nickname = inviter_info.nickname
+    except ActionFailed:
+        nickname = event.inviter.name
+    return {
+        "self_id": str(bot.self_id),
+        "adapter": SupportAdapter.mirai,
+        "scope": SupportScope.qq_client,
+        "group_id": str(event.group.id),
+        "group_name": event.group.name,
+        "user_id": str(bot.self_id),
+        "name": self_info.nickname,
+        "card": self_info.nickname,
+        "role": event.group.account_perm,
+        "operator": {
+            "user_id": str(event.inviter.id),
+            "name": nickname,
+            "card": event.inviter.name,
+            "role": event.inviter.permission,
+            "join_time": event.inviter.join_timestamp,
+            "mute_duration": event.inviter.mute_time
+        }
+    }
+
+
+@fetcher.supply
+async def _(
+    bot: Bot, 
+    event: Union[
+        BotMuteEvent, 
+        BotUnmuteEvent, 
+        BotLeaveEventKick, 
+        BotLeaveEventDisband,
+        GroupNameChangeEvent,
+        GroupEntranceAnnouncementChangeEvent,
+        GroupMuteAllEvent,
+        GroupAllowMemberInviteEvent,
+    ]
+):
+    self_info = await bot.get_bot_profile()
+    if not event.operator:
+        return {
+            "self_id": str(bot.self_id),
+            "adapter": SupportAdapter.mirai,
+            "scope": SupportScope.qq_client,
+            "user_id": str(bot.self_id),
+            "name": self_info.nickname,
+            "card": self_info.nickname,
+            "role": event.group.account_perm,
+        }
+    try:
+        operator_info = await bot.get_member_profile(group=event.group.id, member=event.operator.id)
+        nickname = operator_info.nickname
+    except ActionFailed:
+        nickname = event.operator.name
+    return {
+        "self_id": str(bot.self_id),
+        "adapter": SupportAdapter.mirai,
+        "scope": SupportScope.qq_client,
+        "group_id": str(event.group.id),
+        "group_name": event.group.name,
+        "user_id": str(bot.self_id),
+        "name": self_info.nickname,
+        "card": self_info.nickname,
+        "role": event.group.account_perm,
+        "mute_duration": getattr(event, "duration", 0),
+        "operator": {
+            "user_id": str(event.operator.id),
+            "name": nickname,
+            "card": event.operator.name,
+            "role": event.operator.permission,
+            "join_time": event.operator.join_timestamp,
+            "mute_duration": event.operator.mute_time
+        }
+    }
+
+
+
+
+@fetcher.supply
+async def _(bot: Bot, event: Union[FriendAddEvent, FriendDeleteEvent, FriendInputStatusChangedEvent, FriendNickChangedEvent]):
+    return {
+        "self_id": str(bot.self_id),
+        "adapter": SupportAdapter.mirai,
+        "scope": SupportScope.qq_client,
+        "user_id": str(event.friend.id),
+        "name": event.friend.nickname,
+        "nickname": event.friend.remark,
+    }
+
+@fetcher.supply
+async def _(bot: Bot, event: FriendRecallEvent):
+    try:
+        info = await bot.get_friend(target=event.operator)
+    except ActionFailed:
+        info = event.friend
+    return {
+        "self_id": str(bot.self_id),
+        "adapter": SupportAdapter.mirai,
+        "scope": SupportScope.qq_client,
+        "user_id": str(info.id),
+        "name": info.nickname,
+        "nickname": info.remark,
+    }
+
+
+@fetcher.supply
+async def _(bot: Bot, event: GroupRecallEvent):
+    try:
+        member = await bot.get_member(group=event.group.id, target=event.author_id)
+        member_info = await bot.get_member_profile(group=event.group.id, member=event.author_id)
+        name = member_info.nickname
+        card = member.name
+        role = member.permission
+    except ActionFailed:
+        name = ""
+        card = ""
+        role = MemberPerm.Member
+    if not event.operator:
+        return {
+            "self_id": str(bot.self_id),
+            "adapter": SupportAdapter.mirai,
+            "scope": SupportScope.qq_guild,
+            "group_id": str(event.group.id),
+            "group_name": event.group.name,
+            "user_id": str(event.author_id),
+            "name": name,
+            "card": card,
+            "role": role,
+        }
+    try:
+        operator_info = await bot.get_member_profile(group=event.group.id, member=event.operator)
+        nickname = operator_info.nickname
+    except ActionFailed:
+        nickname = event.operator.name
+    return {
+        "self_id": str(bot.self_id),
+        "adapter": SupportAdapter.mirai,
+        "scope": SupportScope.qq_guild,
+        "group_id": str(event.group.id),
+        "group_name": event.group.name,
+        "user_id": str(event.author_id),
+        "name": name,
+        "card": card,
+        "role": role,
+        "operator": {
+            "user_id": str(event.operator),
+            "name": nickname,
+            "card": event.operator,
+            "role": member.permission,
+            "join_time": member.join_timestamp,
+            "mute_duration": member.mute_time
+        }
+    }
+
+
+@fetcher.supply
+async def _(bot: Bot, event: NudgeEvent):
+    scene_type = event.scene
+    if scene_type == "friend":
+        try:
+            info = await bot.get_friend(target=event.supplicant)
+            name = info.nickname
+            nickname = info.remark
+        except ActionFailed:
+            name = ""
+            nickname = ""
+        return {
+            "self_id": str(bot.self_id),
+            "adapter": SupportAdapter.mirai,
+            "scope": SupportScope.qq_client,
+            "user_id": str(event.supplicant),
+            "name": name,
+            "nickname": nickname,
+        }
+    if scene_type == "stranger":
+        try:
+            info = await bot.get_user_profile(target=event.supplicant)
+            name = info.nickname
+        except ActionFailed:
+            name = ""
+        return {
+            "self_id": str(bot.self_id),
+            "adapter": SupportAdapter.mirai,
+            "scope": SupportScope.qq_client,
+            "user_id": str(event.supplicant),
+            "name": name,
+        }
+    if isinstance(event.subject, Group):
+        try:
+            member = await bot.get_member(group=event.subject.id, target=event.target)
+            operator = await bot.get_member(group=event.subject.id, target=event.supplicant)
+            member_info = await bot.get_member_profile(group=event.subject.id, member=event.target)
+            operator_info = await bot.get_member_profile(group=event.subject.id, member=event.supplicant)
+            name = member_info.nickname
+            card = member.name
+            role = member.permission
+            operator_name = operator_info.nickname
+            operator_card = operator.name
+            operator_role = operator.permission
+        except ActionFailed:
+            name = ""
+            card = ""
+            role = MemberPerm.Member
+            operator_name = ""
+            operator_card = ""
+            operator_role = MemberPerm.Member
+        return {
+            "self_id": str(bot.self_id),
+            "adapter": SupportAdapter.mirai,
+            "scope": SupportScope.qq_guild,
+            "group_id": str(event.subject.id),
+            "group_name": event.subject.name,
+            "user_id": str(event.target),
+            "name": name,
+            "card": card,
+            "role": role,
+            "operator": {
+                "user_id": str(event.supplicant),
+                "name": operator_name,
+                "card": operator_card,
+                "role": operator_role,
+            }
+        }
+    raise NotImplementedError(f"Event {type(event)} not supported yet")
+
+
+@fetcher.supply
+async def _(bot: Bot, event: MemberJoinEvent):
+    try:
+        info = await bot.get_member_profile(group=event.group.id, member=event.member.id)
+        name = info.nickname
+    except ActionFailed:
+        name = event.member.name
+    if not event.inviter:
+        return {
+            "self_id": str(bot.self_id),
+            "adapter": SupportAdapter.mirai,
+            "scope": SupportScope.qq_guild,
+            "group_id": str(event.group.id),
+            "group_name": event.group.name,
+            "user_id": str(event.member.id),
+            "name": name,
+            "card": event.member.name,
+            "role": event.member.permission,
+            "join_time": event.member.join_timestamp,
+            "mute_duration": event.member.mute_time
+        }
+    try:
+        inviter_info = await bot.get_member_profile(group=event.group.id, member=event.inviter.id)
+        nickname = inviter_info.nickname
+    except ActionFailed:
+        nickname = event.inviter.name
+    return {
+        "self_id": str(bot.self_id),
+        "adapter": SupportAdapter.mirai,
+        "scope": SupportScope.qq_guild,
+        "group_id": str(event.group.id),
+        "group_name": event.group.name,
+        "user_id": str(event.member.id),
+        "name": name,
+        "card": event.member.name,
+        "role": event.member.permission,
+        "join_time": event.member.join_timestamp,
+        "mute_duration": event.member.mute_time,
+        "operator": {
+            "user_id": str(event.inviter.id),
+            "name": nickname,
+            "card": event.inviter.name,
+            "role": event.inviter.permission,
+            "join_time": event.inviter.join_timestamp,
+            "mute_duration": event.inviter.mute_time
+        }
+    }
+
+
+@fetcher.supply
+async def _(
+    bot: Bot,
+    event: Union[
+        MemberLeaveEventKick,
+        MemberLeaveEventQuit,
+        MemberCardChangeEvent,
+        MemberSpecialTitleChangeEvent,
+        MemberPermissionChangeEvent,
+        MemberMuteEvent,
+        MemberUnmuteEvent,
+        MemberHonorChangeEvent,
+    ]
+):
+    try:
+        member_info = await bot.get_member_profile(group=event.group.id, member=event.member.id)
+        name = member_info.nickname
+    except ActionFailed:
+        name = event.member.name
+    if not (operator := getattr(event, "operator", None)):
+        return {
+            "self_id": str(bot.self_id),
+            "adapter": SupportAdapter.mirai,
+            "scope": SupportScope.qq_guild,
+            "group_id": str(event.group.id),
+            "group_name": event.group.name,
+            "user_id": str(event.member.id),
+            "name": name,
+            "card": event.member.name,
+            "role": event.member.permission,
+            "join_time": event.member.join_timestamp,
+            "mute_duration": event.member.mute_time
+        }
+    try:
+        operator_info = await bot.get_member_profile(group=event.group.id, member=operator.id)
+        nickname = operator_info.nickname
+    except ActionFailed:
+        nickname = operator.name
+    return {
+        "self_id": str(bot.self_id),
+        "adapter": SupportAdapter.mirai,
+        "scope": SupportScope.qq_guild,
+        "group_id": str(event.group.id),
+        "group_name": event.group.name,
+        "user_id": str(event.member.id),
+        "name": name,
+        "card": event.member.name,
+        "role": event.member.permission,
+        "join_time": event.member.join_timestamp,
+        "mute_duration": event.member.mute_time,
+        "operator": {
+            "user_id": str(operator.id),
+            "name": nickname,
+            "card": operator.name,
+            "role": operator.permission,
+            "join_time": operator.join_timestamp,
+            "mute_duration": operator.mute_time
+        }
+    }
+
+
+@fetcher.supply
+async def _(bot: Bot, event: NewFriendRequestEvent):
+    return {
+        "self_id": str(bot.self_id),
+        "adapter": SupportAdapter.mirai,
+        "scope": SupportScope.qq_client,
+        "user_id": str(event.supplicant),
+        "name": event.nickname,
+    }
+
+
+@fetcher.supply
+async def _(bot: Bot, event: Union[MemberJoinRequestEvent, BotInvitedJoinGroupRequestEvent]):
+    return {
+        "self_id": str(bot.self_id),
+        "adapter": SupportAdapter.mirai,
+        "scope": SupportScope.qq_guild,
+        "group_id": str(event.source_group),
+        "group_name": event.group_name,
+        "user_id": str(event.supplicant),
+        "name": event.nickname,
     }
