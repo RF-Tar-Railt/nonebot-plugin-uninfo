@@ -26,6 +26,7 @@ class InfoFetcher(metaclass=ABCMeta):
     def __init__(self, adapter: SupportAdapter):
         self.adapter = adapter
         self.endpoint: dict[type[Event], Callable[[Bot, Event], Awaitable[SuppliedData]]] = {}
+        self.wildcard: Optional[Callable[[Bot, Event], Awaitable[SuppliedData]]] = None
 
     def supply(self, func: TSupplier) -> TSupplier:
         event_type = get_type_hints(func)["event"]
@@ -34,6 +35,10 @@ class InfoFetcher(metaclass=ABCMeta):
                 self.endpoint[t] = func  # type: ignore
         else:
             self.endpoint[event_type] = func  # type: ignore
+        return func
+    
+    def supply_wildcard(self, func: TSupplier) -> TSupplier:
+        self.wildcard = func  # type: ignore
         return func
 
     @abstractmethod
@@ -65,6 +70,9 @@ class InfoFetcher(metaclass=ABCMeta):
         func = self.endpoint.get(type(event))
         if func:
             data = await func(bot, event)
+            return self.parse(data)
+        if self.wildcard:
+            data = await self.wildcard(bot, event)
             return self.parse(data)
         raise NotImplementedError(f"Event {type(event)} not supported yet")
 
