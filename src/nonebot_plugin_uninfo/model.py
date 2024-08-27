@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import IntEnum
-from typing import Union, Optional
+from typing import Optional, Union
 
 from nonebot.adapters import Adapter
 
-from.constraint import SupportScope, SupportAdapter
+from .constraint import SupportAdapter, SupportScope
 
 
 class SceneType(IntEnum):
@@ -23,7 +23,6 @@ class SceneType(IntEnum):
     """子频道语音场景"""
 
 
-
 @dataclass
 class Scene:
     id: str
@@ -35,11 +34,11 @@ class Scene:
     @property
     def is_private(self) -> bool:
         return self.type == SceneType.PRIVATE
-    
+
     @property
     def is_group(self) -> bool:
         return self.type == SceneType.GROUP
-    
+
     @property
     def is_guild(self) -> bool:
         return self.type == SceneType.GUILD
@@ -79,6 +78,7 @@ class MuteInfo:
     def __post_init__(self):
         if self.duration.total_seconds() < 1:
             self.muted = False
+
 
 @dataclass
 class Member:

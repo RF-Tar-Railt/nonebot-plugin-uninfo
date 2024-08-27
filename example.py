@@ -27,4 +27,4 @@ async def inspect1(session: Uninfo):
         f"User: {session.user.id}\n"
         f"Scene: {session.scene.id}\n"
         f"Member: {session.member.id if session.member else 'None'}"
-    )    
+    )

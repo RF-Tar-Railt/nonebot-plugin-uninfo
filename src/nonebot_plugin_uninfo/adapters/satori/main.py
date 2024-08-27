@@ -1,16 +1,12 @@
-from datetime import datetime, timedelta
-from typing import Optional, Union
-
-from nonebot.adapters import Bot
-from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
-from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
-from nonebot_plugin_uninfo.model import SceneType, User, Scene, Member, Role
+from typing import Optional
 
 from nonebot.adapters.satori import Bot
-from nonebot.adapters.satori.models import ChannelType
-from nonebot.exception import ActionFailed
 from nonebot.adapters.satori.event import Event
+from nonebot.adapters.satori.models import ChannelType
 
+from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
+from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
+from nonebot_plugin_uninfo.model import Member, Role, Scene, SceneType, User
 
 ROLES = {
     "OWNER": 100,
@@ -27,7 +23,7 @@ class InfoFetcher(BaseInfoFetcher):
             nick=data["nickname"],
             avatar=data.get("avatar"),
         )
-    
+
     def extract_scene(self, data):
         if "scene_id" in data:
             if "parent_id" in data:
@@ -53,7 +49,7 @@ class InfoFetcher(BaseInfoFetcher):
             type=SceneType.PRIVATE,
             avatar=data.get("avatar"),
         )
-    
+
     def extract_member(self, data, user: Optional[User]):
         if "scene_id" not in data:
             return None
@@ -61,7 +57,11 @@ class InfoFetcher(BaseInfoFetcher):
             return Member(
                 user=user,
                 nick=data["member_name"],
-                role=Role(data["role_id"], ROLES.get(data["role_name"], 1), data["role_name"]) if "role_id" in data else None,
+                role=(
+                    Role(data["role_id"], ROLES.get(data["role_name"], 1), data["role_name"])
+                    if "role_id" in data
+                    else None
+                ),
                 joined_at=data["joined_at"],
             )
         return Member(
@@ -72,10 +72,12 @@ class InfoFetcher(BaseInfoFetcher):
                 avatar=data.get("avatar"),
             ),
             nick=data["member_name"],
-            role=Role(data["role_id"], ROLES.get(data["role_name"], 1), data["role_name"]) if "role_id" in data else None,
+            role=(
+                Role(data["role_id"], ROLES.get(data["role_name"], 1), data["role_name"]) if "role_id" in data else None
+            ),
             joined_at=data["joined_at"],
         )
-    
+
     def _pack_user(self, user):
         data = {
             "user_id": user.id,
@@ -102,7 +104,7 @@ class InfoFetcher(BaseInfoFetcher):
             "scene_avatar": guild.avatar,
         }
         return self.extract_scene(data)
-    
+
     def _pack_channel(self, bot: Bot, guild, channel):
         data = {
             "scene_id": channel.id,
@@ -154,6 +156,7 @@ class InfoFetcher(BaseInfoFetcher):
                 "joined_at": member.joined_at,
             }
             yield self.extract_member(data, None)
+
 
 fetcher = InfoFetcher(SupportAdapter.satori)
 

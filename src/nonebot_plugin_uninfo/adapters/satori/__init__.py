@@ -6,7 +6,7 @@ from nonebot_plugin_uninfo.loader import BaseLoader
 class Loader(BaseLoader):
     def get_adapter(self) -> SupportAdapter:
         return SupportAdapter.satori
-    
+
     def get_fetcher(self) -> InfoFetcher:
         from .main import fetcher
 

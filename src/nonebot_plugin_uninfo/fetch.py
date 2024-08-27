@@ -1,12 +1,12 @@
 from abc import ABCMeta, abstractmethod
-from typing import Callable, TypeVar, Optional, TypedDict, Any, Union, get_type_hints, get_origin, get_args
-from typing_extensions import Required, NotRequired
-from collections.abc import Awaitable, AsyncGenerator
+from collections.abc import AsyncGenerator, Awaitable
+from typing import Any, Callable, Optional, TypedDict, TypeVar, Union, get_args, get_origin, get_type_hints
+from typing_extensions import NotRequired, Required
 
-from nonebot.adapters import Event, Bot
+from nonebot.adapters import Bot, Event
+
 from .constraint import SupportAdapter, SupportScope
-from .model import Session, User, Scene, Member
-
+from .model import Member, Scene, Session, User
 
 TE = TypeVar("TE", bound=Event)
 TB = TypeVar("TB", bound=Bot)
@@ -36,7 +36,7 @@ class InfoFetcher(metaclass=ABCMeta):
         else:
             self.endpoint[event_type] = func  # type: ignore
         return func
-    
+
     def supply_wildcard(self, func: TSupplier) -> TSupplier:
         self.wildcard = func  # type: ignore
         return func
@@ -62,9 +62,8 @@ class InfoFetcher(metaclass=ABCMeta):
             user=user,
             scene=self.extract_scene(data),  # type: ignore
             member=self.extract_member(data, user),  # type: ignore
-            operator=self.extract_member(data["operator"], None) if "operator" in data else None  # type: ignore
+            operator=self.extract_member(data["operator"], None) if "operator" in data else None,  # type: ignore
         )
-
 
     async def fetch(self, bot: Bot, event: Event) -> Session:
         func = self.endpoint.get(type(event))

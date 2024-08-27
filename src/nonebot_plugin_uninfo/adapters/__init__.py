@@ -1,13 +1,13 @@
-import os
 import importlib
-from typing import cast
+import os
 from pathlib import Path
+from typing import cast
 from warnings import warn
 
 from nonebot import get_adapters
 
-from ..loader import BaseLoader
 from ..fetch import InfoFetcher
+from ..loader import BaseLoader
 
 root = Path(__file__).parent
 loaders: dict[str, BaseLoader] = {}

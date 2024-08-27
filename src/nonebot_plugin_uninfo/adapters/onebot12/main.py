@@ -1,31 +1,30 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Optional, Union
 
-from nonebot.adapters import Bot
-from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
-from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
-from nonebot_plugin_uninfo.model import SceneType, User, Scene, Member, MuteInfo
-
 from nonebot.adapters.onebot.v12 import Bot
-from nonebot.exception import ActionFailed
 from nonebot.adapters.onebot.v12.event import (
-    PrivateMessageDeleteEvent,
-    PrivateMessageEvent,
-    FriendDecreaseEvent,
-    FriendIncreaseEvent,
-    GroupMemberDecreaseEvent,
-    GroupMemberIncreaseEvent,
-    GroupMessageDeleteEvent,
-    GroupMessageEvent,
     ChannelCreateEvent,
     ChannelDeleteEvent,
     ChannelMemberDecreaseEvent,
     ChannelMemberIncreaseEvent,
     ChannelMessageDeleteEvent,
     ChannelMessageEvent,
+    FriendDecreaseEvent,
+    FriendIncreaseEvent,
+    GroupMemberDecreaseEvent,
+    GroupMemberIncreaseEvent,
+    GroupMessageDeleteEvent,
+    GroupMessageEvent,
     GuildMemberDecreaseEvent,
     GuildMemberIncreaseEvent,
+    PrivateMessageDeleteEvent,
+    PrivateMessageEvent,
 )
+from nonebot.exception import ActionFailed
+
+from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
+from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
+from nonebot_plugin_uninfo.model import Member, MuteInfo, Scene, SceneType, User
 
 
 class InfoFetcher(BaseInfoFetcher):
@@ -35,7 +34,7 @@ class InfoFetcher(BaseInfoFetcher):
             name=data["name"],
             nick=data["nickname"],
         )
-    
+
     def extract_scene(self, data):
         if "group_id" in data:
             return Scene(
@@ -64,7 +63,7 @@ class InfoFetcher(BaseInfoFetcher):
             id=data["user_id"],
             type=SceneType.PRIVATE,
         )
-    
+
     def extract_member(self, data, user: Optional[User]):
         if "group_id" not in data:
             return None
@@ -74,10 +73,11 @@ class InfoFetcher(BaseInfoFetcher):
             return Member(
                 user=user,
                 nick=data["displayname"],
-                mute=MuteInfo(
-                    muted=True,
-                    duration=timedelta(seconds=data["mute_duration"])
-                ) if "mute_duration" in data else None
+                mute=(
+                    MuteInfo(muted=True, duration=timedelta(seconds=data["mute_duration"]))
+                    if "mute_duration" in data
+                    else None
+                ),
             )
         return Member(
             User(
@@ -86,10 +86,11 @@ class InfoFetcher(BaseInfoFetcher):
                 nick=data.get("nickname"),
             ),
             nick=data["displayname"],
-            mute=MuteInfo(
-                muted=True,
-                duration=timedelta(seconds=data["mute_duration"])
-            ) if "mute_duration" in data else None
+            mute=(
+                MuteInfo(muted=True, duration=timedelta(seconds=data["mute_duration"]))
+                if "mute_duration" in data
+                else None
+            ),
         )
 
     async def query_user(self, bot: Bot):
@@ -155,15 +156,20 @@ class InfoFetcher(BaseInfoFetcher):
             }
             yield self.extract_member(data, None)
 
+
 fetcher = InfoFetcher(SupportAdapter.onebot12)
 
+
 @fetcher.supply
-async def _(bot: Bot, event: Union[
-    PrivateMessageDeleteEvent,
-    PrivateMessageEvent,
-    FriendDecreaseEvent,
-    FriendIncreaseEvent,
-]):
+async def _(
+    bot: Bot,
+    event: Union[
+        PrivateMessageDeleteEvent,
+        PrivateMessageEvent,
+        FriendDecreaseEvent,
+        FriendIncreaseEvent,
+    ],
+):
     try:
         user_info = await bot.get_user_info(user_id=event.user_id)
     except ActionFailed:
@@ -179,12 +185,15 @@ async def _(bot: Bot, event: Union[
 
 
 @fetcher.supply
-async def _(bot: Bot, event: Union[
-    GroupMemberDecreaseEvent,
-    GroupMemberIncreaseEvent,
-    GroupMessageDeleteEvent,
-    GroupMessageEvent,
-]):
+async def _(
+    bot: Bot,
+    event: Union[
+        GroupMemberDecreaseEvent,
+        GroupMemberIncreaseEvent,
+        GroupMessageDeleteEvent,
+        GroupMessageEvent,
+    ],
+):
     try:
         group_info = await bot.get_group_info(group_id=event.group_id)
     except ActionFailed:
@@ -214,12 +223,15 @@ async def _(bot: Bot, event: Union[
 
 
 @fetcher.supply
-async def _(bot: Bot, event: Union[
-    ChannelMemberDecreaseEvent,
-    ChannelMemberIncreaseEvent,
-    ChannelMessageDeleteEvent,
-    ChannelMessageEvent,
-]):
+async def _(
+    bot: Bot,
+    event: Union[
+        ChannelMemberDecreaseEvent,
+        ChannelMemberIncreaseEvent,
+        ChannelMessageDeleteEvent,
+        ChannelMessageEvent,
+    ],
+):
     try:
         guild_info = await bot.get_group_info(group_id=event.guild_id)
     except ActionFailed:
@@ -256,10 +268,13 @@ async def _(bot: Bot, event: Union[
 
 
 @fetcher.supply
-async def _(bot: Bot, event: Union[
-    ChannelCreateEvent,
-    ChannelDeleteEvent,
-]):
+async def _(
+    bot: Bot,
+    event: Union[
+        ChannelCreateEvent,
+        ChannelDeleteEvent,
+    ],
+):
     try:
         guild_info = await bot.get_group_info(group_id=event.guild_id)
     except ActionFailed:
@@ -287,10 +302,13 @@ async def _(bot: Bot, event: Union[
 
 
 @fetcher.supply
-async def _(bot: Bot, event: Union[
-    GuildMemberDecreaseEvent,
-    GuildMemberIncreaseEvent,
-]):
+async def _(
+    bot: Bot,
+    event: Union[
+        GuildMemberDecreaseEvent,
+        GuildMemberIncreaseEvent,
+    ],
+):
     try:
         guild_info = await bot.get_guild_info(guild_id=event.guild_id)
     except ActionFailed:
@@ -318,5 +336,5 @@ async def _(bot: Bot, event: Union[
             "user_id": event.operator_id,
             "name": operator_info.get("user_name"),
             "nickname": operator_info.get("user_displayname"),
-        }
+        },
     }

@@ -1,49 +1,47 @@
 from datetime import datetime, timedelta
 from typing import Optional, Union
 
-from nonebot.adapters import Bot
-from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
-from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
-from nonebot_plugin_uninfo.model import SceneType, User, Scene, Role, Member, MuteInfo
-
 from nonebot.adapters.mirai import Bot
-from nonebot.exception import ActionFailed
-from nonebot.adapters.mirai.model.relationship import MemberPerm, Group
 from nonebot.adapters.mirai.event import (
-    FriendMessage,
-    GroupMessage,
-    TempMessage,
-    StrangerMessage,
+    BotInvitedJoinGroupRequestEvent,
     BotJoinGroupEvent,
+    BotLeaveEventDisband,
+    BotLeaveEventKick,
     BotMuteEvent,
     BotUnmuteEvent,
-    BotLeaveEventKick,
-    BotLeaveEventDisband,
-    GroupNameChangeEvent,
-    GroupEntranceAnnouncementChangeEvent,
-    GroupMuteAllEvent,
-    GroupAllowMemberInviteEvent,
     FriendAddEvent,
     FriendDeleteEvent,
     FriendInputStatusChangedEvent,
+    FriendMessage,
     FriendNickChangedEvent,
     FriendRecallEvent,
+    GroupAllowMemberInviteEvent,
+    GroupEntranceAnnouncementChangeEvent,
+    GroupMessage,
+    GroupMuteAllEvent,
+    GroupNameChangeEvent,
     GroupRecallEvent,
-    NudgeEvent,
+    MemberCardChangeEvent,
+    MemberHonorChangeEvent,
     MemberJoinEvent,
+    MemberJoinRequestEvent,
     MemberLeaveEventKick,
     MemberLeaveEventQuit,
-    MemberCardChangeEvent,
-    MemberSpecialTitleChangeEvent,
-    MemberPermissionChangeEvent,
     MemberMuteEvent,
+    MemberPermissionChangeEvent,
+    MemberSpecialTitleChangeEvent,
     MemberUnmuteEvent,
-    MemberHonorChangeEvent,
     NewFriendRequestEvent,
-    MemberJoinRequestEvent,
-    BotInvitedJoinGroupRequestEvent
+    NudgeEvent,
+    StrangerMessage,
+    TempMessage,
 )
+from nonebot.adapters.mirai.model.relationship import Group, MemberPerm
+from nonebot.exception import ActionFailed
 
+from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
+from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
+from nonebot_plugin_uninfo.model import Member, MuteInfo, Role, Scene, SceneType, User
 
 ROLES = {
     MemberPerm.Owner: Role("OWNER", 100, "OWNER"),
@@ -72,9 +70,9 @@ class InfoFetcher(BaseInfoFetcher):
             id=data["group_id"],
             type=SceneType.GROUP,
             name=data["group_name"],
-            avatar=f"https://p.qlogo.cn/gh/{data['group_id']}/{data['group_id']}/"
+            avatar=f"https://p.qlogo.cn/gh/{data['group_id']}/{data['group_id']}/",
         )
-    
+
     def extract_member(self, data, user: Optional[User]):
         if "group_id" not in data:
             return None
@@ -84,10 +82,11 @@ class InfoFetcher(BaseInfoFetcher):
                 nick=data["card"],
                 role=ROLES[_role] if (_role := data.get("role")) else None,
                 joined_at=datetime.fromtimestamp(data["join_time"]) if data["join_time"] else None,
-                mute=MuteInfo(
-                    muted=True,
-                    duration=timedelta(seconds=data["mute_duration"])
-                ) if "mute_duration" in data else None
+                mute=(
+                    MuteInfo(muted=True, duration=timedelta(seconds=data["mute_duration"]))
+                    if "mute_duration" in data
+                    else None
+                ),
             )
         return Member(
             User(
@@ -99,10 +98,11 @@ class InfoFetcher(BaseInfoFetcher):
             nick=data["card"],
             role=ROLES[_role] if (_role := data.get("role")) else None,
             joined_at=datetime.fromtimestamp(data["join_time"]) if data["join_time"] else None,
-            mute=MuteInfo(
-                muted=True,
-                duration=timedelta(seconds=data["mute_duration"])
-            ) if "mute_duration" in data else None
+            mute=(
+                MuteInfo(muted=True, duration=timedelta(seconds=data["mute_duration"]))
+                if "mute_duration" in data
+                else None
+            ),
         )
 
     async def query_user(self, bot: Bot):
@@ -138,7 +138,7 @@ class InfoFetcher(BaseInfoFetcher):
                     "role": member.permission,
                     "join_time": member.join_timestamp,
                     "gender": info.sex.lower(),
-                    "mute_duration": member.mute_time
+                    "mute_duration": member.mute_time,
                 }
             except ActionFailed:
                 data = {
@@ -148,11 +148,13 @@ class InfoFetcher(BaseInfoFetcher):
                     "card": member.name,
                     "role": member.permission,
                     "join_time": member.join_timestamp,
-                    "mute_duration": member.mute_time
+                    "mute_duration": member.mute_time,
                 }
             yield self.extract_member(data, None)
 
+
 fetcher = InfoFetcher(SupportAdapter.mirai)
+
 
 @fetcher.supply
 async def _(bot: Bot, event: FriendMessage):
@@ -171,6 +173,7 @@ async def _(bot: Bot, event: FriendMessage):
         "gender": sex,
     }
 
+
 @fetcher.supply
 async def _(bot: Bot, event: StrangerMessage):
     try:
@@ -187,6 +190,7 @@ async def _(bot: Bot, event: StrangerMessage):
         "nickname": event.sender.remark,
         "gender": sex,
     }
+
 
 @fetcher.supply
 async def _(bot: Bot, event: Union[GroupMessage, TempMessage]):
@@ -206,7 +210,7 @@ async def _(bot: Bot, event: Union[GroupMessage, TempMessage]):
         "card": event.sender.name,
         "role": event.sender.permission,
         "join_time": event.sender.join_timestamp,
-        "mute_duration": event.sender.mute_time
+        "mute_duration": event.sender.mute_time,
     }
 
 
@@ -244,24 +248,24 @@ async def _(bot: Bot, event: BotJoinGroupEvent):
             "card": event.inviter.name,
             "role": event.inviter.permission,
             "join_time": event.inviter.join_timestamp,
-            "mute_duration": event.inviter.mute_time
-        }
+            "mute_duration": event.inviter.mute_time,
+        },
     }
 
 
 @fetcher.supply
 async def _(
-    bot: Bot, 
+    bot: Bot,
     event: Union[
-        BotMuteEvent, 
-        BotUnmuteEvent, 
-        BotLeaveEventKick, 
+        BotMuteEvent,
+        BotUnmuteEvent,
+        BotLeaveEventKick,
         BotLeaveEventDisband,
         GroupNameChangeEvent,
         GroupEntranceAnnouncementChangeEvent,
         GroupMuteAllEvent,
         GroupAllowMemberInviteEvent,
-    ]
+    ],
 ):
     self_info = await bot.get_bot_profile()
     if not event.operator:
@@ -296,15 +300,15 @@ async def _(
             "card": event.operator.name,
             "role": event.operator.permission,
             "join_time": event.operator.join_timestamp,
-            "mute_duration": event.operator.mute_time
-        }
+            "mute_duration": event.operator.mute_time,
+        },
     }
 
 
-
-
 @fetcher.supply
-async def _(bot: Bot, event: Union[FriendAddEvent, FriendDeleteEvent, FriendInputStatusChangedEvent, FriendNickChangedEvent]):
+async def _(
+    bot: Bot, event: Union[FriendAddEvent, FriendDeleteEvent, FriendInputStatusChangedEvent, FriendNickChangedEvent]
+):
     return {
         "self_id": str(bot.self_id),
         "adapter": SupportAdapter.mirai,
@@ -313,6 +317,7 @@ async def _(bot: Bot, event: Union[FriendAddEvent, FriendDeleteEvent, FriendInpu
         "name": event.friend.nickname,
         "nickname": event.friend.remark,
     }
+
 
 @fetcher.supply
 async def _(bot: Bot, event: FriendRecallEvent):
@@ -375,8 +380,8 @@ async def _(bot: Bot, event: GroupRecallEvent):
             "card": event.operator,
             "role": member.permission,
             "join_time": member.join_timestamp,
-            "mute_duration": member.mute_time
-        }
+            "mute_duration": member.mute_time,
+        },
     }
 
 
@@ -446,7 +451,7 @@ async def _(bot: Bot, event: NudgeEvent):
                 "name": operator_name,
                 "card": operator_card,
                 "role": operator_role,
-            }
+            },
         }
     raise NotImplementedError(f"Event {type(event)} not supported yet")
 
@@ -470,7 +475,7 @@ async def _(bot: Bot, event: MemberJoinEvent):
             "card": event.member.name,
             "role": event.member.permission,
             "join_time": event.member.join_timestamp,
-            "mute_duration": event.member.mute_time
+            "mute_duration": event.member.mute_time,
         }
     try:
         inviter_info = await bot.get_member_profile(group=event.group.id, member=event.inviter.id)
@@ -495,8 +500,8 @@ async def _(bot: Bot, event: MemberJoinEvent):
             "card": event.inviter.name,
             "role": event.inviter.permission,
             "join_time": event.inviter.join_timestamp,
-            "mute_duration": event.inviter.mute_time
-        }
+            "mute_duration": event.inviter.mute_time,
+        },
     }
 
 
@@ -512,7 +517,7 @@ async def _(
         MemberMuteEvent,
         MemberUnmuteEvent,
         MemberHonorChangeEvent,
-    ]
+    ],
 ):
     try:
         member_info = await bot.get_member_profile(group=event.group.id, member=event.member.id)
@@ -531,7 +536,7 @@ async def _(
             "card": event.member.name,
             "role": event.member.permission,
             "join_time": event.member.join_timestamp,
-            "mute_duration": event.member.mute_time
+            "mute_duration": event.member.mute_time,
         }
     try:
         operator_info = await bot.get_member_profile(group=event.group.id, member=operator.id)
@@ -556,8 +561,8 @@ async def _(
             "card": operator.name,
             "role": operator.permission,
             "join_time": operator.join_timestamp,
-            "mute_duration": operator.mute_time
-        }
+            "mute_duration": operator.mute_time,
+        },
     }
 
 

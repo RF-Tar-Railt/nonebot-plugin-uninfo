@@ -1,9 +1,10 @@
-from nonebot.adapters import Bot
-from nonebot.params import Depends
 from typing import Annotated
 
-from .model import Session as Session
+from nonebot.adapters import Bot
+from nonebot.params import Depends
+
 from .adapters import INFO_FETCHER_MAPPING
+from .model import Session as Session
 
 
 async def get_session(bot: Bot, event):
@@ -12,6 +13,7 @@ async def get_session(bot: Bot, event):
     if fetcher:
         return await fetcher.fetch(bot, event)
     return None
+
 
 def UniSession() -> Session:
     return Depends(get_session)

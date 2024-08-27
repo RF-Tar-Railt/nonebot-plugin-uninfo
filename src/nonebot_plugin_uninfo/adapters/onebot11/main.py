@@ -1,30 +1,28 @@
 from datetime import datetime, timedelta
 from typing import Optional, Union
 
-from nonebot.adapters import Bot
-from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
-from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
-from nonebot_plugin_uninfo.model import SceneType, User, Scene, Role, Member, MuteInfo
-
 from nonebot.adapters.onebot.v11 import Bot
-from nonebot.exception import ActionFailed
 from nonebot.adapters.onebot.v11.event import (
-    PrivateMessageEvent, 
-    GroupMessageEvent,
-    GroupUploadNoticeEvent,
+    FriendAddNoticeEvent,
+    FriendRecallNoticeEvent,
+    FriendRequestEvent,
     GroupAdminNoticeEvent,
     GroupBanNoticeEvent,
     GroupDecreaseNoticeEvent,
     GroupIncreaseNoticeEvent,
+    GroupMessageEvent,
     GroupRecallNoticeEvent,
     GroupRequestEvent,
-    PokeNotifyEvent,
+    GroupUploadNoticeEvent,
     HonorNotifyEvent,
-    FriendAddNoticeEvent,
-    FriendRecallNoticeEvent,
-    FriendRequestEvent
+    PokeNotifyEvent,
+    PrivateMessageEvent,
 )
+from nonebot.exception import ActionFailed
 
+from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
+from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
+from nonebot_plugin_uninfo.model import Member, MuteInfo, Role, Scene, SceneType, User
 
 ROLES = {
     "owner": ("OWNER", 100),
@@ -53,9 +51,9 @@ class InfoFetcher(BaseInfoFetcher):
             id=data["group_id"],
             type=SceneType.GROUP,
             name=data["group_name"],
-            avatar=f"https://p.qlogo.cn/gh/{data['group_id']}/{data['group_id']}/"
+            avatar=f"https://p.qlogo.cn/gh/{data['group_id']}/{data['group_id']}/",
         )
-    
+
     def extract_member(self, data, user: Optional[User]):
         if "group_id" not in data:
             return None
@@ -65,10 +63,11 @@ class InfoFetcher(BaseInfoFetcher):
                 nick=data["card"],
                 role=Role(*ROLES[_role], name=_role) if (_role := data.get("role")) else None,
                 joined_at=datetime.fromtimestamp(data["join_time"]) if data["join_time"] else None,
-                mute=MuteInfo(
-                    muted=True,
-                    duration=timedelta(seconds=data["mute_duration"])
-                ) if "mute_duration" in data else None
+                mute=(
+                    MuteInfo(muted=True, duration=timedelta(seconds=data["mute_duration"]))
+                    if "mute_duration" in data
+                    else None
+                ),
             )
         return Member(
             User(
@@ -80,10 +79,11 @@ class InfoFetcher(BaseInfoFetcher):
             nick=data["card"],
             role=Role(*ROLES[_role], name=_role) if (_role := data.get("role")) else None,
             joined_at=datetime.fromtimestamp(data["join_time"]) if data["join_time"] else None,
-            mute=MuteInfo(
-                muted=True,
-                duration=timedelta(seconds=data["mute_duration"])
-            ) if "mute_duration" in data else None
+            mute=(
+                MuteInfo(muted=True, duration=timedelta(seconds=data["mute_duration"]))
+                if "mute_duration" in data
+                else None
+            ),
         )
 
     async def query_user(self, bot: Bot):
@@ -116,11 +116,13 @@ class InfoFetcher(BaseInfoFetcher):
                 "card": member["card"],
                 "role": member["role"],
                 "join_time": member.get("join_time"),
-                "gender": member["sex"]
+                "gender": member["sex"],
             }
             yield self.extract_member(data, None)
 
+
 fetcher = InfoFetcher(SupportAdapter.onebot11)
+
 
 @fetcher.supply
 async def _(bot, event: PrivateMessageEvent):
@@ -167,11 +169,7 @@ async def _(bot, event: GroupMessageEvent):
     except ActionFailed:
         group_info = {}
     try:
-        member_info = await bot.get_group_member_info(
-            group_id=event.group_id,
-            user_id=event.user_id,
-            no_cache=True
-        )
+        member_info = await bot.get_group_member_info(group_id=event.group_id, user_id=event.user_id, no_cache=True)
     except ActionFailed:
         member_info = {}
     return {
@@ -188,26 +186,23 @@ async def _(bot, event: GroupMessageEvent):
         "join_time": member_info.get("join_time"),
     }
 
+
 @fetcher.supply
 async def _(
-    bot: Bot, 
+    bot: Bot,
     event: Union[
-        GroupUploadNoticeEvent, 
+        GroupUploadNoticeEvent,
         GroupAdminNoticeEvent,
         GroupRequestEvent,
         HonorNotifyEvent,
-    ]
+    ],
 ):
     try:
         group_info = await bot.get_group_info(group_id=event.group_id)
     except ActionFailed:
         group_info = {}
     try:
-        member_info = await bot.get_group_member_info(
-            group_id=event.group_id,
-            user_id=event.user_id,
-            no_cache=True
-        )
+        member_info = await bot.get_group_member_info(group_id=event.group_id, user_id=event.user_id, no_cache=True)
     except ActionFailed:
         member_info = {}
     return {
@@ -227,7 +222,7 @@ async def _(
 
 @fetcher.supply
 async def _(
-    bot: Bot, 
+    bot: Bot,
     event: PokeNotifyEvent,
 ):
     if not event.group_id:
@@ -238,7 +233,7 @@ async def _(
                     "remark": friend.nick,
                 }
                 break
-        else:   
+        else:
             try:
                 friend_info = await bot.get_stranger_info(user_id=event.user_id)
             except ActionFailed:
@@ -257,19 +252,11 @@ async def _(
     except ActionFailed:
         group_info = {}
     try:
-        operator_info = await bot.get_group_member_info(
-            group_id=event.group_id,
-            user_id=event.user_id,
-            no_cache=True
-        )
+        operator_info = await bot.get_group_member_info(group_id=event.group_id, user_id=event.user_id, no_cache=True)
     except ActionFailed:
         operator_info = {}
     try:
-        member_info = await bot.get_group_member_info(
-            group_id=event.group_id,
-            user_id=event.target_id,
-            no_cache=True
-        )
+        member_info = await bot.get_group_member_info(group_id=event.group_id, user_id=event.target_id, no_cache=True)
     except ActionFailed:
         member_info = {}
     return {
@@ -292,36 +279,30 @@ async def _(
             "card": operator_info.get("card"),
             "role": operator_info.get("role"),
             "join_time": operator_info.get("join_time"),
-        }
+        },
     }
 
 
 @fetcher.supply
 async def _(
-    bot: Bot, 
+    bot: Bot,
     event: Union[
         GroupDecreaseNoticeEvent,
         GroupIncreaseNoticeEvent,
         GroupRecallNoticeEvent,
-    ]
+    ],
 ):
     try:
         group_info = await bot.get_group_info(group_id=event.group_id)
     except ActionFailed:
         group_info = {}
     try:
-        member_info = await bot.get_group_member_info(
-            group_id=event.group_id,
-            user_id=event.user_id,
-            no_cache=True
-        )
+        member_info = await bot.get_group_member_info(group_id=event.group_id, user_id=event.user_id, no_cache=True)
     except ActionFailed:
         member_info = {}
     try:
         operator_info = await bot.get_group_member_info(
-            group_id=event.group_id,
-            user_id=event.operator_id,
-            no_cache=True
+            group_id=event.group_id, user_id=event.operator_id, no_cache=True
         )
     except ActionFailed:
         operator_info = {}
@@ -345,13 +326,13 @@ async def _(
             "card": operator_info.get("card"),
             "role": operator_info.get("role"),
             "join_time": operator_info.get("join_time"),
-        }
+        },
     }
 
 
 @fetcher.supply
 async def _(
-    bot: Bot, 
+    bot: Bot,
     event: GroupBanNoticeEvent,
 ):
     try:
@@ -359,18 +340,12 @@ async def _(
     except ActionFailed:
         group_info = {}
     try:
-        member_info = await bot.get_group_member_info(
-            group_id=event.group_id,
-            user_id=event.user_id,
-            no_cache=True
-        )
+        member_info = await bot.get_group_member_info(group_id=event.group_id, user_id=event.user_id, no_cache=True)
     except ActionFailed:
         member_info = {}
     try:
         operator_info = await bot.get_group_member_info(
-            group_id=event.group_id,
-            user_id=event.operator_id,
-            no_cache=True
+            group_id=event.group_id, user_id=event.operator_id, no_cache=True
         )
     except ActionFailed:
         operator_info = {}
@@ -395,5 +370,5 @@ async def _(
             "card": operator_info.get("card"),
             "role": operator_info.get("role"),
             "join_time": operator_info.get("join_time"),
-        }
+        },
     }
