@@ -22,7 +22,6 @@ class SupportAdapter(str, Enum):
     onebot11 = "OneBot V11"
     onebot12 = "OneBot V12"
     qq = "QQ"
-    red = "RedProtocol"
     satori = "Satori"
     telegram = "Telegram"
     tail_chat = "Tailchat"
@@ -75,9 +74,10 @@ class SupportScope(str, Enum):
     @staticmethod
     def ensure_satori(platform: str):
         return {
+            "red": SupportScope.qq_client,
             "chronocat": SupportScope.qq_client,
             "onebot": SupportScope.qq_client,
-            "qq": SupportScope.qq_guild,
+            "qq": SupportScope.qq_api,
             "telegram": SupportScope.telegram,
             "discord": SupportScope.discord,
             "feishu": SupportScope.feishu,
@@ -105,7 +105,6 @@ class SupportAdapterModule(str, Enum):
     onebot11 = "nonebot.adapters.onebot.v11"
     onebot12 = "nonebot.adapters.onebot.v12"
     qq = "nonebot.adapters.qq"
-    red = "nonebot.adapters.red"
     satori = "nonebot.adapters.satori"
     telegram = "nonebot.adapters.telegram"
     tail_chat = "nonebot_adapter_tailchat"
