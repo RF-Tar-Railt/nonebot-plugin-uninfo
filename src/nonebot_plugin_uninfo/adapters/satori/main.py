@@ -122,18 +122,6 @@ class InfoFetcher(BaseInfoFetcher):
         for guild in guilds.data:
             if not guild_id or guild.id == guild_id:
                 yield self._pack_guild(bot, guild)
-            channels = await bot.channel_list(guild_id=guild.id)
-            for channel in channels.data:
-                yield self._pack_channel(bot, guild, channel)
-            while channels.next:
-                channels = await bot.channel_list(guild_id=guild.id, next_token=channels.next)
-                for channel in channels.data:
-                    yield self._pack_channel(bot, guild, channel)
-        while guilds.next:
-            guilds = await bot.guild_list(next_token=guilds.next)
-            for guild in guilds.data:
-                if not guild_id or guild.id == guild_id:
-                    yield self._pack_guild(bot, guild)
                 channels = await bot.channel_list(guild_id=guild.id)
                 for channel in channels.data:
                     yield self._pack_channel(bot, guild, channel)
@@ -141,6 +129,18 @@ class InfoFetcher(BaseInfoFetcher):
                     channels = await bot.channel_list(guild_id=guild.id, next_token=channels.next)
                     for channel in channels.data:
                         yield self._pack_channel(bot, guild, channel)
+        while guilds.next:
+            guilds = await bot.guild_list(next_token=guilds.next)
+            for guild in guilds.data:
+                if not guild_id or guild.id == guild_id:
+                    yield self._pack_guild(bot, guild)
+                    channels = await bot.channel_list(guild_id=guild.id)
+                    for channel in channels.data:
+                        yield self._pack_channel(bot, guild, channel)
+                    while channels.next:
+                        channels = await bot.channel_list(guild_id=guild.id, next_token=channels.next)
+                        for channel in channels.data:
+                            yield self._pack_channel(bot, guild, channel)
 
     async def query_member(self, bot: Bot, guild_id: str):
         members = await bot.guild_member_list(guild_id=guild_id)

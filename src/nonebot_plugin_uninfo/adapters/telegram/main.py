@@ -1,7 +1,6 @@
 from typing import Optional, Union
 
 from nonebot.adapters.telegram import Bot
-from nonebot.adapters.telegram.model import User as TelegramUser
 from nonebot.adapters.telegram.event import (
     ForumTopicEditedMessageEvent,
     ForumTopicMessageEvent,
@@ -12,6 +11,7 @@ from nonebot.adapters.telegram.event import (
     PrivateEditedMessageEvent,
     PrivateMessageEvent,
 )
+from nonebot.adapters.telegram.model import User as TelegramUser
 from nonebot.exception import ActionFailed
 
 from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
@@ -57,6 +57,7 @@ class InfoFetcher(BaseInfoFetcher):
             )
         return Scene(
             id=data["user_id"],
+            name=data["name"],
             type=SceneType.PRIVATE,
             avatar=data.get("avatar"),
         )
@@ -97,17 +98,23 @@ fetcher = InfoFetcher(SupportAdapter.telegram)
 async def _supply_userdata(bot: Bot, user: Union[str, TelegramUser]):
     if isinstance(user, TelegramUser):
         res = {
-            "user_id": str(user.id), 
-            "name": user.username or "", 
-            "nickname": user.first_name + (f" {user.last_name}" if user.last_name else ""), 
-            "avatar": None
+            "self_id": str(bot.self_id),
+            "adapter": SupportAdapter.telegram,
+            "scope": SupportScope.telegram,
+            "user_id": str(user.id),
+            "name": user.username or "",
+            "nickname": user.first_name + (f" {user.last_name}" if user.last_name else ""),
+            "avatar": None,
         }
     else:
         res = {
-            "user_id": user, 
-            "name": "", 
-            "nickname": "", 
-            "avatar": None
+            "self_id": str(bot.self_id),
+            "adapter": SupportAdapter.telegram,
+            "scope": SupportScope.telegram,
+            "user_id": user,
+            "name": "",
+            "nickname": "",
+            "avatar": None,
         }
     try:
         if isinstance(user, str):
@@ -122,9 +129,7 @@ async def _supply_userdata(bot: Bot, user: Union[str, TelegramUser]):
             res["nickname"] = nickname or ""
         else:
             _user = user
-        profile_photos = await bot.get_user_profile_photos(
-            user_id=_user.id, limit=1
-        )
+        profile_photos = await bot.get_user_profile_photos(user_id=_user.id, limit=1)
         if profile_photos.total_count > 0:
             file = await bot.get_file(file_id=profile_photos.photos[0][-1].file_id)
             if file.file_path:
