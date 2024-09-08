@@ -192,6 +192,9 @@ async def _(bot: Bot, event: Event):
     if event.guild and event.channel:
         base["scene_id"] = event.channel.id
         base["scene_type"] = TYPE_MAPPING[event.channel.type]
+        if event.channel.type == ChannelType.DIRECT:
+            del base["scene_id"]
+            return base
         base["scene_name"] = event.channel.name
         base["parent_id"] = event.guild.id
         base["parent_type"] = SceneType.GUILD
@@ -208,6 +211,9 @@ async def _(bot: Bot, event: Event):
     elif event.channel:
         base["scene_id"] = event.channel.id
         base["scene_type"] = SceneType.GROUP if "guild.plain" else TYPE_MAPPING[event.channel.type]
+        if event.channel.type == ChannelType.DIRECT:
+            del base["scene_id"]
+            return base
         base["scene_name"] = event.channel.name
     if event.member:
         base["member_name"] = event.member.nick
