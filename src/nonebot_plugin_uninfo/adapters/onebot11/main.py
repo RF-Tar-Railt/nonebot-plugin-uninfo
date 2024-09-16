@@ -46,6 +46,8 @@ class InfoFetcher(BaseInfoFetcher):
             return Scene(
                 id=data["user_id"],
                 type=SceneType.PRIVATE,
+                name=data["name"],
+                avatar=f"http://q1.qlogo.cn/g?b=qq&nk={data['user_id']}&s=640",
             )
         return Scene(
             id=data["group_id"],
