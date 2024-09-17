@@ -2,45 +2,46 @@ from datetime import timedelta
 from typing import Optional, Union
 
 from nonebot.adapters.discord import Bot
+from nonebot.adapters.discord.api.model import Channel as DiscordChannel
+from nonebot.adapters.discord.api.model import GuildMember, Snowflake
+from nonebot.adapters.discord.api.model import User as DiscordUser
+from nonebot.adapters.discord.api.types import ChannelType as DiscordChannelType
+from nonebot.adapters.discord.api.types import UNSET
 from nonebot.adapters.discord.event import (
-    Event,
     ChannelCreateEvent,
     ChannelDeleteEvent,
     ChannelUpdateEvent,
-    GuildBanAddEvent,
-    GuildBanRemoveEvent,
-    GuildCreateEvent,
-    GuildDeleteEvent,
-    GuildUpdateEvent,
-    GuildMemberAddEvent,
-    GuildMemberRemoveEvent,
-    GuildMemberUpdateEvent,
-    GuildMessageCreateEvent,
     DirectMessageCreateEvent,
-    GuildMessageDeleteEvent,
-    DirectMessageDeleteEvent,
-    GuildMessageDeleteBulkEvent,
     DirectMessageDeleteBulkEvent,
-    GuildMessageUpdateEvent,
-    DirectMessageUpdateEvent,
-    InteractionCreateEvent,
+    DirectMessageDeleteEvent,
     DirectMessageReactionAddEvent,
     DirectMessageReactionRemoveAllEvent,
     DirectMessageReactionRemoveEmojiEvent,
     DirectMessageReactionRemoveEvent,
+    DirectMessageUpdateEvent,
+    Event,
+    GuildBanAddEvent,
+    GuildBanRemoveEvent,
+    GuildCreateEvent,
+    GuildDeleteEvent,
+    GuildMemberAddEvent,
+    GuildMemberRemoveEvent,
+    GuildMemberUpdateEvent,
+    GuildMessageCreateEvent,
+    GuildMessageDeleteBulkEvent,
+    GuildMessageDeleteEvent,
     GuildMessageReactionAddEvent,
     GuildMessageReactionRemoveAllEvent,
     GuildMessageReactionRemoveEmojiEvent,
     GuildMessageReactionRemoveEvent,
+    GuildMessageUpdateEvent,
+    GuildUpdateEvent,
+    InteractionCreateEvent,
 )
-from nonebot.adapters.discord.api.model import User as DiscordUser, GuildMember, Channel as DiscordChannel
-from nonebot.adapters.discord.api.types import ChannelType as DiscordChannelType, UNSET
-from nonebot.adapters.discord.api.model import Snowflake
 
 from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
 from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
-from nonebot_plugin_uninfo.model import Member, Role, Scene, SceneType, User, MuteInfo
-
+from nonebot_plugin_uninfo.model import Member, MuteInfo, Role, Scene, SceneType, User
 
 CHANNEL_TYPE = {
     DiscordChannelType.GUILD_TEXT: SceneType.CHANNEL_TEXT,
@@ -53,6 +54,7 @@ CHANNEL_TYPE = {
 }
 
 BASE_URL = "https://cdn.discordapp.com/"
+
 
 def avatar_url(id: str, avatar: str):
     if not avatar:
@@ -143,7 +145,12 @@ class InfoFetcher(BaseInfoFetcher):
         while guilds:
             for guild in guilds:
                 if not guild_id or str(guild.id) == guild_id:
-                    _guild = Scene(id=str(guild.id), type=SceneType.GUILD, name=guild.name, avatar=avatar_url(str(guild.id), guild.icon or ""))
+                    _guild = Scene(
+                        id=str(guild.id),
+                        type=SceneType.GUILD,
+                        name=guild.name,
+                        avatar=avatar_url(str(guild.id), guild.icon or ""),
+                    )
                     yield _guild
                     channels = await bot.get_guild_channels(guild_id=guild.id)
                     for channel in channels:
@@ -183,9 +190,6 @@ class InfoFetcher(BaseInfoFetcher):
 
 
 fetcher = InfoFetcher(SupportAdapter.telegram)
-
-
-
 
 
 @fetcher.supply
@@ -235,7 +239,10 @@ async def _(bot: Bot, event: InteractionCreateEvent):
 
 
 @fetcher.supply
-async def _(bot: Bot, event: Union[DirectMessageCreateEvent, GuildMessageCreateEvent, DirectMessageUpdateEvent, GuildMessageUpdateEvent]):
+async def _(
+    bot: Bot,
+    event: Union[DirectMessageCreateEvent, GuildMessageCreateEvent, DirectMessageUpdateEvent, GuildMessageUpdateEvent],
+):
     base = {
         "self_id": str(bot.self_id),
         "adapter": SupportAdapter.discord,
@@ -278,7 +285,19 @@ async def _(bot: Bot, event: Union[DirectMessageCreateEvent, GuildMessageCreateE
 
 
 @fetcher.supply
-async def _(bot: Bot, event: Union[DirectMessageDeleteEvent, DirectMessageDeleteBulkEvent, GuildMessageDeleteEvent, GuildMessageDeleteBulkEvent, GuildMessageReactionRemoveAllEvent, DirectMessageReactionRemoveAllEvent, DirectMessageReactionRemoveEmojiEvent, GuildMessageReactionRemoveEmojiEvent]):
+async def _(
+    bot: Bot,
+    event: Union[
+        DirectMessageDeleteEvent,
+        DirectMessageDeleteBulkEvent,
+        GuildMessageDeleteEvent,
+        GuildMessageDeleteBulkEvent,
+        GuildMessageReactionRemoveAllEvent,
+        DirectMessageReactionRemoveAllEvent,
+        DirectMessageReactionRemoveEmojiEvent,
+        GuildMessageReactionRemoveEmojiEvent,
+    ],
+):
     base = {
         "self_id": str(bot.self_id),
         "adapter": SupportAdapter.discord,
@@ -309,7 +328,15 @@ async def _(bot: Bot, event: Union[DirectMessageDeleteEvent, DirectMessageDelete
 
 
 @fetcher.supply
-async def _(bot: Bot, event: Union[DirectMessageReactionAddEvent, DirectMessageReactionRemoveEvent, GuildMessageReactionAddEvent, GuildMessageReactionRemoveEvent]):
+async def _(
+    bot: Bot,
+    event: Union[
+        DirectMessageReactionAddEvent,
+        DirectMessageReactionRemoveEvent,
+        GuildMessageReactionAddEvent,
+        GuildMessageReactionRemoveEvent,
+    ],
+):
     base = {
         "self_id": str(bot.self_id),
         "adapter": SupportAdapter.discord,
@@ -435,7 +462,7 @@ async def _(bot: Bot, event: Event):
             "user_id": str(event.user.id),
             "name": event.user.username,
             "nickname": event.nick or "",
-            "avatar":event.user.avatar,
+            "avatar": event.user.avatar,
             "role": await _handle_role(bot, str(event.guild_id), event.roles),
             "joined_at": event.joined_at,
         }

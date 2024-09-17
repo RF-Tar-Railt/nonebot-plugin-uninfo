@@ -3,22 +3,21 @@ from typing import Optional, Union
 
 from nonebot.adapters.kritor import Bot
 from nonebot.adapters.kritor.event import (
+    FriendApplyRequest,
     FriendMessage,
+    GroupApplyRequest,
     GroupMessage,
     GuildMessage,
+    InvitedJoinGroupRequest,
+    NearbyMessage,
     StrangerMessage,
     TempMessage,
-    NearbyMessage,
-    GroupApplyRequest,
-    FriendApplyRequest,
-    InvitedJoinGroupRequest
 )
 from nonebot.exception import ActionFailed
 
 from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
 from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
-from nonebot_plugin_uninfo.model import Member, MuteInfo, Scene, SceneType, User, Role
-
+from nonebot_plugin_uninfo.model import Member, MuteInfo, Role, Scene, SceneType, User
 
 ROLES = {
     "owner": ("OWNER", 100),
@@ -210,16 +209,13 @@ class InfoFetcher(BaseInfoFetcher):
                     yield self.extract_member(data, None)
         except ActionFailed:
             pass
-        
+
 
 fetcher = InfoFetcher(SupportAdapter.kritor)
 
 
 @fetcher.supply
-async def _(
-    bot: Bot,
-    event: FriendMessage
-):
+async def _(bot: Bot, event: FriendMessage):
     try:
         user_info = await bot.get_friend_profile_card(targets=[event.sender.uin])
         remark = user_info.friends_profile_card[0].remark
@@ -237,10 +233,7 @@ async def _(
 
 
 @fetcher.supply
-async def _(
-    bot: Bot,
-    event: GroupMessage
-):
+async def _(bot: Bot, event: GroupMessage):
     try:
         group_info = await bot.get_group_info(group=event.sender.group_id)
         member_info = await bot.get_group_member_info(group=event.sender.group_id, target=event.sender.uin)
@@ -252,7 +245,11 @@ async def _(
         extra = {
             "mute_duration": member_info.shut_up_time,
             "join_time": member_info.join_time / 1000,
-            "role": "owner" if event.sender.uin == group_owner else "admin" if event.sender.uin in group_admins else "member",
+            "role": (
+                "owner"
+                if event.sender.uin == group_owner
+                else "admin" if event.sender.uin in group_admins else "member"
+            ),
         }
     except ActionFailed:
         nick = card = event.sender.nick
@@ -272,10 +269,7 @@ async def _(
 
 
 @fetcher.supply
-async def _(
-    bot: Bot,
-    event: Union[StrangerMessage, NearbyMessage]
-):
+async def _(bot: Bot, event: Union[StrangerMessage, NearbyMessage]):
     try:
         user_info = await bot.get_stranger_profile_card(targets=[event.sender.uin])
         remark = user_info.strangers_profile_card[0].remark
@@ -292,10 +286,7 @@ async def _(
 
 
 @fetcher.supply
-async def _(
-    bot: Bot,
-    event: TempMessage
-):
+async def _(bot: Bot, event: TempMessage):
     try:
         group_info = await bot.get_group_info(group=event.sender.group_id)
         member_info = await bot.get_group_member_info(group=event.sender.group_id, target=event.sender.uin)
@@ -307,7 +298,11 @@ async def _(
         extra = {
             "mute_duration": member_info.shut_up_time,
             "join_time": member_info.join_time / 1000,
-            "role": "owner" if event.sender.uin == group_owner else "admin" if event.sender.uin in group_admins else "member",
+            "role": (
+                "owner"
+                if event.sender.uin == group_owner
+                else "admin" if event.sender.uin in group_admins else "member"
+            ),
         }
     except ActionFailed:
         nick = card = event.sender.nick
@@ -327,10 +322,7 @@ async def _(
 
 
 @fetcher.supply
-async def _(
-    bot: Bot,
-    event: GuildMessage
-):
+async def _(bot: Bot, event: GuildMessage):
     try:
         guilds = await bot.get_guild_list()
         guild_info = next(guild for guild in guilds if guild.guild_id == event.sender.guild_id)
@@ -368,10 +360,7 @@ async def _(
 
 
 @fetcher.supply
-async def _(
-    bot: Bot,
-    event: GroupApplyRequest
-):
+async def _(bot: Bot, event: GroupApplyRequest):
     try:
         user_info = await bot.get_stranger_profile_card(targets=[event.applier_uin])
         nick = user_info.strangers_profile_card[0].nick
@@ -397,10 +386,7 @@ async def _(
 
 
 @fetcher.supply
-async def _(
-    bot: Bot,
-    event: FriendApplyRequest
-):
+async def _(bot: Bot, event: FriendApplyRequest):
     try:
         user_info = await bot.get_stranger_profile_card(targets=[event.applier_uin])
         nick = user_info.strangers_profile_card[0].nick
@@ -419,10 +405,7 @@ async def _(
 
 
 @fetcher.supply
-async def _(
-    bot: Bot,
-    event: InvitedJoinGroupRequest
-):
+async def _(bot: Bot, event: InvitedJoinGroupRequest):
     try:
         user_info = await bot.get_stranger_profile_card(targets=[event.inviter_uin])
         nick = user_info.strangers_profile_card[0].nick
