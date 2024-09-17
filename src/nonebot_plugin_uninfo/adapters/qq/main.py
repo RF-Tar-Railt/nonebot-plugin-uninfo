@@ -53,7 +53,6 @@ class InfoFetcher(BaseInfoFetcher):
                     id=data["channel_id"],
                     name=data.get("channel_name"),
                     type=CHANNEL_TYPE.get(data.get("channel_type", 0), SceneType.CHANNEL_TEXT),
-                    avatar=data.get("guild_avatar"),
                     parent=Scene(
                         id=data["guild_id"],
                         name=data.get("guild_name"),
