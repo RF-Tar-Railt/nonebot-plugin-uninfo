@@ -54,7 +54,7 @@ class InfoFetcher(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def supply_self(self, bot: Bot) -> SuppliedData:
+    def supply_self(self, bot) -> SuppliedData:
         pass
 
     def parse(self, data: dict) -> Session:

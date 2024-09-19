@@ -40,7 +40,7 @@ from nonebot.adapters.discord.event import (
 )
 
 from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
-from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
+from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher, SuppliedData
 from nonebot_plugin_uninfo.model import Member, MuteInfo, Role, Scene, SceneType, User
 
 CHANNEL_TYPE = {
@@ -193,19 +193,20 @@ class InfoFetcher(BaseInfoFetcher):
                 break
             members = await bot.list_guild_members(guild_id=int(guild_id), limit=100, after=members[-1].user.id)
 
+    def supply_self(self, bot) -> SuppliedData:
+        return {
+            "self_id": str(bot.self_id),
+            "adapter": SupportAdapter.discord,
+            "scope": SupportScope.discord,
+        }
 
 fetcher = InfoFetcher(SupportAdapter.discord)
 
 
 @fetcher.supply
 async def _(bot: Bot, event: InteractionCreateEvent):
-    base = {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.discord,
-        "scope": SupportScope.discord,
-    }
     if isinstance(event.user, DiscordUser):
-        base |= {
+        base = {
             "user_id": str(event.user.id),
             "name": event.user.username,
             "nickname": "",
@@ -216,7 +217,7 @@ async def _(bot: Bot, event: InteractionCreateEvent):
     assert isinstance(event.guild_id, int)
     assert isinstance(event.channel_id, int)
     guild_info = await bot.get_guild(guild_id=event.guild_id)
-    base |= {
+    base = {
         "user_id": str(event.member.user.id),
         "name": event.member.user.username,
         "nickname": event.member.nick,
@@ -249,11 +250,6 @@ async def _(
     event: Union[DirectMessageCreateEvent, GuildMessageCreateEvent, DirectMessageUpdateEvent, GuildMessageUpdateEvent],
 ):
     base = {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.discord,
-        "scope": SupportScope.discord,
-    }
-    base |= {
         "user_id": str(event.author.id),
         "name": event.author.username,
         "nickname": event.author.username,
@@ -303,13 +299,8 @@ async def _(
         GuildMessageReactionRemoveEmojiEvent,
     ],
 ):
-    base = {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.discord,
-        "scope": SupportScope.discord,
-    }
     self_info = await bot.get_current_user()
-    base |= {
+    base = {
         "user_id": str(self_info.id),
         "name": self_info.username,
         "nickname": self_info.username,
@@ -342,13 +333,8 @@ async def _(
         GuildMessageReactionRemoveEvent,
     ],
 ):
-    base = {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.discord,
-        "scope": SupportScope.discord,
-    }
     user = await bot.get_user(user_id=event.user_id)
-    base |= {
+    base = {
         "user_id": str(event.user_id),
         "name": user.username,
         "nickname": user.username,
@@ -379,14 +365,9 @@ async def _(
 
 @fetcher.supply_wildcard
 async def _(bot: Bot, event: Event):
-    base = {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.qq,
-        "scope": SupportScope.qq_api,
-    }
     if isinstance(event, (ChannelCreateEvent, ChannelDeleteEvent, ChannelUpdateEvent)):
         self_info = await bot.get_current_user()
-        base |= {
+        base = {
             "user_id": str(self_info.id),
             "name": self_info.username,
             "nickname": self_info.username,
@@ -407,7 +388,7 @@ async def _(bot: Bot, event: Event):
             }
         return base
     if isinstance(event, (GuildBanAddEvent, GuildBanRemoveEvent)):
-        base |= {
+        base = {
             "user_id": str(event.user.id),
             "name": event.user.username,
             "nickname": event.user.username,
@@ -422,7 +403,7 @@ async def _(bot: Bot, event: Event):
         return base
     if isinstance(event, (GuildCreateEvent, GuildUpdateEvent)):
         self_info = await bot.get_current_user()
-        base |= {
+        base = {
             "user_id": str(self_info.id),
             "name": self_info.username,
             "nickname": self_info.username,
@@ -436,7 +417,7 @@ async def _(bot: Bot, event: Event):
         return base
     if isinstance(event, GuildDeleteEvent):
         self_info = await bot.get_current_user()
-        base |= {
+        base = {
             "user_id": str(self_info.id),
             "name": self_info.username,
             "nickname": self_info.username,
@@ -447,7 +428,7 @@ async def _(bot: Bot, event: Event):
         }
         return base
     if isinstance(event, GuildMemberAddEvent):
-        base |= {
+        base = {
             "user_id": str(event.user.id),
             "name": event.user.username,
             "nickname": event.nick or "",
@@ -463,7 +444,7 @@ async def _(bot: Bot, event: Event):
         }
         return base
     if isinstance(event, GuildMemberUpdateEvent):
-        base |= {
+        base = {
             "user_id": str(event.user.id),
             "name": event.user.username,
             "nickname": event.nick or "",
@@ -479,7 +460,7 @@ async def _(bot: Bot, event: Event):
         }
         return base
     if isinstance(event, GuildMemberRemoveEvent):
-        base |= {
+        base = {
             "user_id": str(event.user.id),
             "name": event.user.username,
             "nickname": event.user.username,
