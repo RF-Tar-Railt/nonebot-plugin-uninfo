@@ -126,7 +126,7 @@ class InfoFetcher(BaseInfoFetcher):
         raise NotImplementedError
 
 
-fetcher = InfoFetcher(SupportAdapter.telegram)
+fetcher = InfoFetcher(SupportAdapter.qq)
 
 
 async def _handle_role(bot: Bot, guild_id: str, channel_id: Union[str, None], roles: list[str]):

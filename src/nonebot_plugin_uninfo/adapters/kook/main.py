@@ -1,0 +1,205 @@
+from datetime import timedelta, datetime
+from typing import Optional, Union
+
+from nonebot.adapters.kaiheila import Bot
+from nonebot.adapters.kaiheila.api.model import Channel as KookChannel
+from nonebot.adapters.kaiheila.event import Event
+
+from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
+from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
+from nonebot_plugin_uninfo.model import Member, MuteInfo, Role, Scene, SceneType, User
+
+
+async def _handle_role(bot: Bot, guild_id: str, roles: list[int]):
+    if not roles:
+        return Role("MEMBER", 1, "member")
+    res = []
+    resp = await bot.get_guild_roles(guild_id=int(guild_id))
+    for role in resp:
+        perm = int(role.permissions)
+        if perm & (1 << 3) == (1 << 3):
+            res.append(("ADMINISTRATOR", 10, role.name))
+        if perm & (1 << 4) == (1 << 4):
+            res.append(("CHANNEL_ADMINISTRATOR", 9, role.name))
+        else:
+            res.append((str(role.id), 1, role.name))
+    return Role(*sorted(res, key=lambda x: x[1], reverse=True)[0])
+
+
+def _handle_channel_type(channel: KookChannel):
+    if channel.is_category:
+        return SceneType.CHANNEL_CATEGORY
+    if channel.type == 2:
+        return SceneType.CHANNEL_VOICE
+    return SceneType.CHANNEL_TEXT
+
+
+class InfoFetcher(BaseInfoFetcher):
+    def extract_user(self, data):
+        return User(
+            id=data["user_id"],
+            name=data["name"],
+            avatar=data["avatar"],
+        )
+
+    def extract_scene(self, data):
+        if "guild_id" in data:
+            if "channel_id" in data:
+                return Scene(
+                    id=data["channel_id"],
+                    name=data.get("channel_name"),
+                    type=data.get("channel_type", SceneType.CHANNEL_TEXT),
+                    parent=Scene(
+                        id=data["guild_id"],
+                        name=data.get("guild_name"),
+                        type=SceneType.GUILD,
+                        avatar=data.get("guild_avatar"),
+                    ),
+                )
+            return Scene(
+                id=data["guild_id"],
+                name=data.get("guild_name"),
+                type=SceneType.GUILD,
+                avatar=data.get("guild_avatar"),
+            )
+        if "channel_id" in data:
+            return Scene(
+                id=data["channel_id"],
+                name=data.get("channel_name"),
+                type=data.get("channel_type", SceneType.CHANNEL_TEXT),
+            )
+        return Scene(
+            id=data["user_id"],
+            type=SceneType.PRIVATE,
+            name=data["name"],
+            avatar=data["avatar"],
+        )
+
+    def extract_member(self, data, user: Optional[User]):
+        if "guild_id" in data or "channel_id" in data:
+            if user:
+                return Member(user, nick=data["nickname"], role=data.get("role"), joined_at=data.get("joined_at"))
+            return Member(
+                User(
+                    id=data["user_id"],
+                    name=data["name"],
+                    avatar=data.get("avatar"),
+                ),
+                nick=data["nickname"],
+                role=data.get("role"),
+                joined_at=data.get("joined_at"),
+            )
+        return None
+
+    async def query_user(self, bot: Bot):
+        while True:
+            resp = await bot.userChat_list()
+            for chat in resp.user_chats or []:
+                if chat.target_info:
+                    yield User(
+                        id=chat.target_info.id_ or "",
+                        name=chat.target_info.username,
+                        avatar=chat.target_info.avatar,
+                    )
+            if not resp.meta or resp.meta.page == resp.meta.page_total:
+                break
+            resp = await bot.userChat_list(page=(resp.meta.page or 0) + 1)
+        
+
+    async def query_scene(self, bot: Bot, guild_id: Optional[str]):
+        while True:
+            resp = await bot.guild_list()
+            for guild in resp.guilds or []:
+                if not guild.id_:
+                    continue
+                if not guild_id or str(guild.id_) == guild_id:
+                    _guild = Scene(
+                        id=str(guild.id_),
+                        type=SceneType.GUILD,
+                        name=guild.name,
+                        avatar=guild.icon,
+                    )
+                    yield _guild
+                    channels = guild.channels or (await bot.channel_list(guild_id=guild.id_)).channels or []
+                    for channel in channels:
+                        yield Scene(
+                            id=str(channel.id_),
+                            type=_handle_channel_type(channel),
+                            name=channel.name,
+                            parent=_guild,
+                        )
+            if not resp.meta or resp.meta.page == resp.meta.page_total:
+                break
+            resp = await bot.guild_list(page=(resp.meta.page or 0) + 1)
+
+    async def query_member(self, bot: Bot, guild_id: str):
+        while True:
+            resp = await bot.guild_userList(guild_id=guild_id)
+            for member in resp.users or []:
+                user = User(
+                    id=str(member.id_),
+                    name=member.username,
+                    avatar=member.avatar,
+                )
+                yield Member(
+                    user=user,
+                    nick=member.nickname or member.username,
+                    role=await _handle_role(bot, guild_id, member.roles or []),
+                    joined_at=datetime.fromtimestamp(member.joined_at / 1000) if member.joined_at else None,
+                    mute= MuteInfo(muted=True, duration=timedelta(60)) if member.status == 10 else None,
+                )
+
+
+fetcher = InfoFetcher(SupportAdapter.kook)
+
+
+@fetcher.supply_wildcard
+async def _(bot: Bot, event: Event):
+    base = {
+        "self_id": str(bot.self_id),
+        "adapter": SupportAdapter.kook,
+        "scope": SupportScope.kook,
+    }
+    user = event.extra.author or await bot.user_view(user_id=event.user_id)
+    base |= {
+        "user_id": user.id_,
+        "name": user.username,
+        "nickname": user.nickname,
+        "avatar": user.avatar,
+    }
+    if event.channel_type == "PERSON":
+        return base
+    if event.extra.guild_id:
+        guild = await bot.guild_view(guild_id=event.extra.guild_id)
+        base |= {
+            "guild_id": guild.id_,
+            "guild_name": guild.name,
+            "guild_avatar": guild.icon,
+        }
+        member = await bot.user_view(guild_id=event.extra.guild_id, user_id=event.user_id)
+        base |= {
+            "nickname": member.nickname,
+            "role": await _handle_role(bot, event.extra.guild_id, member.roles or []),
+            "joined_at": datetime.fromtimestamp(member.joined_at / 1000) if member.joined_at else None,
+        }
+    if event.type_ != 255:
+        channel = await bot.channel_view(target_id=event.target_id)
+        base |= {
+            "channel_id": channel.id_,
+            "channel_name": channel.name or event.extra.channel_name,
+            "channel_type": _handle_channel_type(channel),
+        }
+        if channel.guild_id and not event.extra.guild_id:
+            guild = await bot.guild_view(guild_id=channel.guild_id)
+            base |= {
+                "guild_id": guild.id_,
+                "guild_name": guild.name,
+                "guild_avatar": guild.icon,
+            }
+            member = await bot.user_view(guild_id=channel.guild_id, user_id=event.user_id)
+            base |= {
+                "nickname": member.nickname,
+                "role": await _handle_role(bot, channel.guild_id, member.roles or []),
+                "joined_at": datetime.fromtimestamp(member.joined_at / 1000) if member.joined_at else None,
+            }
+    return base

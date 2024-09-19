@@ -92,7 +92,7 @@ class InfoFetcher(BaseInfoFetcher):
                 return Scene(
                     id=data["channel_id"],
                     name=data.get("channel_name"),
-                    type=CHANNEL_TYPE.get(data.get("channel_type", 0), SceneType.CHANNEL_TEXT),
+                    type=data.get("channel_type", SceneType.CHANNEL_TEXT),
                     avatar=avatar_url(data["channel_id"], data.get("channel_avatar") or ""),
                     parent=Scene(
                         id=data["guild_id"],
@@ -111,14 +111,14 @@ class InfoFetcher(BaseInfoFetcher):
             return Scene(
                 id=data["channel_id"],
                 name=data.get("channel_name"),
-                type=CHANNEL_TYPE.get(data.get("channel_type", 0), SceneType.CHANNEL_TEXT),
+                type=data.get("channel_type", SceneType.CHANNEL_TEXT),
                 avatar=avatar_url(data["channel_id"], data.get("channel_avatar") or ""),
             )
         return Scene(
             id=data["user_id"],
             type=SceneType.PRIVATE,
             name=data["name"],
-            avatar=data["avatar"],
+            avatar=avatar_url(data["user_id"], data.get("avatar") or ""),
         )
 
     def extract_member(self, data, user: Optional[User]):
@@ -129,7 +129,7 @@ class InfoFetcher(BaseInfoFetcher):
                 User(
                     id=data["user_id"],
                     name=data["name"],
-                    avatar=data.get("avatar"),
+                    avatar=avatar_url(data["user_id"], data.get("avatar") or ""),
                 ),
                 nick=data["nickname"],
                 role=data.get("role"),
@@ -189,7 +189,7 @@ class InfoFetcher(BaseInfoFetcher):
             members = await bot.list_guild_members(guild_id=int(guild_id), limit=100, after=members[-1].user.id)
 
 
-fetcher = InfoFetcher(SupportAdapter.telegram)
+fetcher = InfoFetcher(SupportAdapter.discord)
 
 
 @fetcher.supply
