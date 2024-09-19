@@ -153,6 +153,8 @@ async def _handle_role(bot: Bot, guild_id: str, channel_id: Union[str, None], ro
                 res.append(("CHANNEL_ADMINISTRATOR", perm.permissions, roles_info.get(role, "子频道管理员")))
         except ActionFailed:
             res.append(("MEMBER", 1, roles_info.get(role, "成员")))
+    if not res:
+        return Role(*ROLES["1"])
     return Role(*sorted(res, key=lambda x: x[1], reverse=True)[0])
 
 

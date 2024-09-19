@@ -68,13 +68,18 @@ async def _handle_role(bot: Bot, guild_id: str, roles: list[Snowflake]):
     res = []
     resp = await bot.get_guild_roles(guild_id=int(guild_id))
     for role in resp:
+        if role.id not in roles:
+            continue
         perm = int(role.permissions)
         if perm & (1 << 3) == (1 << 3):
+            if perm & (1 << 5) == (1 << 5):
+                res.append(("OWNER", 100, role.name))
             res.append(("ADMINISTRATOR", 10, role.name))
         if perm & (1 << 4) == (1 << 4):
             res.append(("CHANNEL_ADMINISTRATOR", 9, role.name))
-        else:
-            res.append((str(role.id), 1, role.name))
+        res.append((str(role.id), 1, role.name))
+    if not res:
+        return Role("MEMBER", 1, "member")
     return Role(*sorted(res, key=lambda x: x[1], reverse=True)[0])
 
 

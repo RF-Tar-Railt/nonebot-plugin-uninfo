@@ -1,5 +1,5 @@
-from datetime import timedelta, datetime
-from typing import Optional, Union
+from datetime import datetime, timedelta
+from typing import Optional
 
 from nonebot.adapters.kaiheila import Bot
 from nonebot.adapters.kaiheila.api.model import Channel as KookChannel
@@ -14,15 +14,22 @@ async def _handle_role(bot: Bot, guild_id: str, roles: list[int]):
     if not roles:
         return Role("MEMBER", 1, "member")
     res = []
-    resp = await bot.get_guild_roles(guild_id=int(guild_id))
-    for role in resp:
-        perm = int(role.permissions)
-        if perm & (1 << 3) == (1 << 3):
+    resp = await bot.guildRole_list(guild_id=guild_id)
+    if not resp.roles:
+        return Role("MEMBER", 1, "member")
+    for role in resp.roles:
+        if role.role_id not in roles:
+            continue
+        perm = int(role.permissions)  # type: ignore
+        if perm & (1 << 0) == (1 << 0):
+            if perm & (1 << 1) == (1 << 1):
+                res.append(("OWNER", 100, role.name))
             res.append(("ADMINISTRATOR", 10, role.name))
-        if perm & (1 << 4) == (1 << 4):
+        if perm & (1 << 5) == (1 << 5):
             res.append(("CHANNEL_ADMINISTRATOR", 9, role.name))
-        else:
-            res.append((str(role.id), 1, role.name))
+        res.append((str(role.role_id), 1, role.name))
+    if not res:
+        return Role("MEMBER", 1, "member")
     return Role(*sorted(res, key=lambda x: x[1], reverse=True)[0])
 
 
@@ -104,7 +111,6 @@ class InfoFetcher(BaseInfoFetcher):
             if not resp.meta or resp.meta.page == resp.meta.page_total:
                 break
             resp = await bot.userChat_list(page=(resp.meta.page or 0) + 1)
-        
 
     async def query_scene(self, bot: Bot, guild_id: Optional[str]):
         while True:
@@ -146,7 +152,7 @@ class InfoFetcher(BaseInfoFetcher):
                     nick=member.nickname or member.username,
                     role=await _handle_role(bot, guild_id, member.roles or []),
                     joined_at=datetime.fromtimestamp(member.joined_at / 1000) if member.joined_at else None,
-                    mute= MuteInfo(muted=True, duration=timedelta(60)) if member.status == 10 else None,
+                    mute=MuteInfo(muted=True, duration=timedelta(60)) if member.status == 10 else None,
                 )
 
 
@@ -169,19 +175,6 @@ async def _(bot: Bot, event: Event):
     }
     if event.channel_type == "PERSON":
         return base
-    if event.extra.guild_id:
-        guild = await bot.guild_view(guild_id=event.extra.guild_id)
-        base |= {
-            "guild_id": guild.id_,
-            "guild_name": guild.name,
-            "guild_avatar": guild.icon,
-        }
-        member = await bot.user_view(guild_id=event.extra.guild_id, user_id=event.user_id)
-        base |= {
-            "nickname": member.nickname,
-            "role": await _handle_role(bot, event.extra.guild_id, member.roles or []),
-            "joined_at": datetime.fromtimestamp(member.joined_at / 1000) if member.joined_at else None,
-        }
     if event.type_ != 255:
         channel = await bot.channel_view(target_id=event.target_id)
         base |= {
@@ -189,17 +182,32 @@ async def _(bot: Bot, event: Event):
             "channel_name": channel.name or event.extra.channel_name,
             "channel_type": _handle_channel_type(channel),
         }
-        if channel.guild_id and not event.extra.guild_id:
-            guild = await bot.guild_view(guild_id=channel.guild_id)
+        if channel.guild_id or event.extra.guild_id:
+            guild_id = channel.guild_id or event.extra.guild_id or ""
+            guild = await bot.guild_view(guild_id=guild_id)
             base |= {
                 "guild_id": guild.id_,
                 "guild_name": guild.name,
                 "guild_avatar": guild.icon,
             }
-            member = await bot.user_view(guild_id=channel.guild_id, user_id=event.user_id)
+            member = await bot.user_view(guild_id=guild_id, user_id=event.user_id)
             base |= {
                 "nickname": member.nickname,
-                "role": await _handle_role(bot, channel.guild_id, member.roles or []),
+                "role": await _handle_role(bot, guild_id, member.roles or []),
                 "joined_at": datetime.fromtimestamp(member.joined_at / 1000) if member.joined_at else None,
             }
+    else:
+        guild_id = event.extra.guild_id or event.target_id
+        guild = await bot.guild_view(guild_id=guild_id)
+        base |= {
+            "guild_id": guild.id_,
+            "guild_name": guild.name,
+            "guild_avatar": guild.icon,
+        }
+        member = await bot.user_view(guild_id=guild_id, user_id=event.user_id)
+        base |= {
+            "nickname": member.nickname,
+            "role": await _handle_role(bot, guild_id, member.roles or []),
+            "joined_at": datetime.fromtimestamp(member.joined_at / 1000) if member.joined_at else None,
+        }
     return base
