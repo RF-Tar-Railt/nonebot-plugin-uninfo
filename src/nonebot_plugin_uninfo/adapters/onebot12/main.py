@@ -24,6 +24,7 @@ from nonebot.exception import ActionFailed
 
 from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
 from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
+from nonebot_plugin_uninfo.fetch import SuppliedData
 from nonebot_plugin_uninfo.model import Member, MuteInfo, Scene, SceneType, User
 
 
@@ -156,6 +157,13 @@ class InfoFetcher(BaseInfoFetcher):
             }
             yield self.extract_member(data, None)
 
+    def supply_self(self, bot: Bot) -> SuppliedData:
+        return {
+            "self_id": str(bot.self_id),
+            "adapter": SupportAdapter.onebot12,
+            "scope": SupportScope.ensure_ob12(bot.platform),
+        }
+
 
 fetcher = InfoFetcher(SupportAdapter.onebot12)
 
@@ -175,9 +183,6 @@ async def _(
     except ActionFailed:
         user_info = {}
     return {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.onebot12,
-        "scope": SupportScope.ensure_ob12(bot.platform),
         "user_id": event.user_id,
         "name": user_info.get("user_name"),
         "nickname": user_info.get("user_remark"),
@@ -210,9 +215,6 @@ async def _(
     except ActionFailed:
         member_info = {}
     return {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.onebot12,
-        "scope": SupportScope.ensure_ob12(bot.platform),
         "group_id": event.group_id,
         "group_name": group_info.get("group_name"),
         "user_id": event.user_id,
@@ -253,9 +255,6 @@ async def _(
     except ActionFailed:
         member_info = {}
     return {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.onebot12,
-        "scope": SupportScope.ensure_ob12(bot.platform),
         "guild_id": event.guild_id,
         "guild_name": guild_info.get("guild_name"),
         "channel_id": event.channel_id,
@@ -288,9 +287,6 @@ async def _(
     except ActionFailed:
         user_info = {}
     return {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.onebot12,
-        "scope": SupportScope.ensure_ob12(bot.platform),
         "guild_id": event.guild_id,
         "guild_name": guild_info.get("guild_name"),
         "channel_id": event.channel_id,
@@ -322,9 +318,6 @@ async def _(
     except ActionFailed:
         operator_info = {}
     return {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.onebot12,
-        "scope": SupportScope.ensure_ob12(bot.platform),
         "guild_id": event.guild_id,
         "guild_name": guild_info.get("guild_name"),
         "user_id": event.user_id,

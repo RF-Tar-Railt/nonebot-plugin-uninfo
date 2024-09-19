@@ -41,6 +41,7 @@ from nonebot.exception import ActionFailed
 
 from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
 from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
+from nonebot_plugin_uninfo.fetch import SuppliedData
 from nonebot_plugin_uninfo.model import Member, MuteInfo, Role, Scene, SceneType, User
 
 ROLES = {
@@ -152,6 +153,13 @@ class InfoFetcher(BaseInfoFetcher):
                 }
             yield self.extract_member(data, None)
 
+    def supply_self(self, bot: Bot) -> SuppliedData:
+        return {
+            "self_id": str(bot.self_id),
+            "adapter": SupportAdapter.mirai,
+            "scope": SupportScope.qq_client,
+        }
+
 
 fetcher = InfoFetcher(SupportAdapter.mirai)
 
@@ -164,9 +172,6 @@ async def _(bot: Bot, event: FriendMessage):
     except ActionFailed:
         sex = "unknown"
     return {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.mirai,
-        "scope": SupportScope.qq_client,
         "user_id": str(event.sender.id),
         "name": event.sender.nickname,
         "nickname": event.sender.remark,
@@ -182,9 +187,6 @@ async def _(bot: Bot, event: StrangerMessage):
     except ActionFailed:
         sex = "unknown"
     return {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.mirai,
-        "scope": SupportScope.qq_client,
         "user_id": str(event.sender.id),
         "name": event.sender.nickname,
         "nickname": event.sender.remark,
@@ -200,9 +202,6 @@ async def _(bot: Bot, event: Union[GroupMessage, TempMessage]):
     except ActionFailed:
         nickname = event.sender.name
     return {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.mirai,
-        "scope": SupportScope.qq_client,
         "group_id": str(event.group.id),
         "group_name": event.group.name,
         "user_id": str(event.sender.id),
@@ -219,9 +218,6 @@ async def _(bot: Bot, event: BotJoinGroupEvent):
     self_info = await bot.get_bot_profile()
     if not event.inviter:
         return {
-            "self_id": str(bot.self_id),
-            "adapter": SupportAdapter.mirai,
-            "scope": SupportScope.qq_client,
             "user_id": str(bot.self_id),
             "name": self_info.nickname,
             "card": self_info.nickname,
@@ -233,9 +229,6 @@ async def _(bot: Bot, event: BotJoinGroupEvent):
     except ActionFailed:
         nickname = event.inviter.name
     return {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.mirai,
-        "scope": SupportScope.qq_client,
         "group_id": str(event.group.id),
         "group_name": event.group.name,
         "user_id": str(bot.self_id),
@@ -270,9 +263,6 @@ async def _(
     self_info = await bot.get_bot_profile()
     if not event.operator:
         return {
-            "self_id": str(bot.self_id),
-            "adapter": SupportAdapter.mirai,
-            "scope": SupportScope.qq_client,
             "user_id": str(bot.self_id),
             "name": self_info.nickname,
             "card": self_info.nickname,
@@ -284,9 +274,6 @@ async def _(
     except ActionFailed:
         nickname = event.operator.name
     return {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.mirai,
-        "scope": SupportScope.qq_client,
         "group_id": str(event.group.id),
         "group_name": event.group.name,
         "user_id": str(bot.self_id),
@@ -310,9 +297,6 @@ async def _(
     bot: Bot, event: Union[FriendAddEvent, FriendDeleteEvent, FriendInputStatusChangedEvent, FriendNickChangedEvent]
 ):
     return {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.mirai,
-        "scope": SupportScope.qq_client,
         "user_id": str(event.friend.id),
         "name": event.friend.nickname,
         "nickname": event.friend.remark,
@@ -326,9 +310,6 @@ async def _(bot: Bot, event: FriendRecallEvent):
     except ActionFailed:
         info = event.friend
     return {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.mirai,
-        "scope": SupportScope.qq_client,
         "user_id": str(info.id),
         "name": info.nickname,
         "nickname": info.remark,
@@ -349,9 +330,6 @@ async def _(bot: Bot, event: GroupRecallEvent):
         role = MemberPerm.Member
     if not event.operator:
         return {
-            "self_id": str(bot.self_id),
-            "adapter": SupportAdapter.mirai,
-            "scope": SupportScope.qq_guild,
             "group_id": str(event.group.id),
             "group_name": event.group.name,
             "user_id": str(event.author_id),
@@ -365,9 +343,6 @@ async def _(bot: Bot, event: GroupRecallEvent):
     except ActionFailed:
         nickname = event.operator.name
     return {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.mirai,
-        "scope": SupportScope.qq_guild,
         "group_id": str(event.group.id),
         "group_name": event.group.name,
         "user_id": str(event.author_id),
@@ -397,9 +372,6 @@ async def _(bot: Bot, event: NudgeEvent):
             name = ""
             nickname = ""
         return {
-            "self_id": str(bot.self_id),
-            "adapter": SupportAdapter.mirai,
-            "scope": SupportScope.qq_client,
             "user_id": str(event.supplicant),
             "name": name,
             "nickname": nickname,
@@ -411,9 +383,6 @@ async def _(bot: Bot, event: NudgeEvent):
         except ActionFailed:
             name = ""
         return {
-            "self_id": str(bot.self_id),
-            "adapter": SupportAdapter.mirai,
-            "scope": SupportScope.qq_client,
             "user_id": str(event.supplicant),
             "name": name,
         }
@@ -437,9 +406,6 @@ async def _(bot: Bot, event: NudgeEvent):
             operator_card = ""
             operator_role = MemberPerm.Member
         return {
-            "self_id": str(bot.self_id),
-            "adapter": SupportAdapter.mirai,
-            "scope": SupportScope.qq_guild,
             "group_id": str(event.subject.id),
             "group_name": event.subject.name,
             "user_id": str(event.target),
@@ -465,9 +431,6 @@ async def _(bot: Bot, event: MemberJoinEvent):
         name = event.member.name
     if not event.inviter:
         return {
-            "self_id": str(bot.self_id),
-            "adapter": SupportAdapter.mirai,
-            "scope": SupportScope.qq_guild,
             "group_id": str(event.group.id),
             "group_name": event.group.name,
             "user_id": str(event.member.id),
@@ -483,9 +446,6 @@ async def _(bot: Bot, event: MemberJoinEvent):
     except ActionFailed:
         nickname = event.inviter.name
     return {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.mirai,
-        "scope": SupportScope.qq_guild,
         "group_id": str(event.group.id),
         "group_name": event.group.name,
         "user_id": str(event.member.id),
@@ -526,9 +486,6 @@ async def _(
         name = event.member.name
     if not (operator := getattr(event, "operator", None)):
         return {
-            "self_id": str(bot.self_id),
-            "adapter": SupportAdapter.mirai,
-            "scope": SupportScope.qq_guild,
             "group_id": str(event.group.id),
             "group_name": event.group.name,
             "user_id": str(event.member.id),
@@ -544,9 +501,6 @@ async def _(
     except ActionFailed:
         nickname = operator.name
     return {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.mirai,
-        "scope": SupportScope.qq_guild,
         "group_id": str(event.group.id),
         "group_name": event.group.name,
         "user_id": str(event.member.id),
@@ -569,9 +523,6 @@ async def _(
 @fetcher.supply
 async def _(bot: Bot, event: NewFriendRequestEvent):
     return {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.mirai,
-        "scope": SupportScope.qq_client,
         "user_id": str(event.supplicant),
         "name": event.nickname,
     }
@@ -580,9 +531,6 @@ async def _(bot: Bot, event: NewFriendRequestEvent):
 @fetcher.supply
 async def _(bot: Bot, event: Union[MemberJoinRequestEvent, BotInvitedJoinGroupRequestEvent]):
     return {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.mirai,
-        "scope": SupportScope.qq_guild,
         "group_id": str(event.source_group),
         "group_name": event.group_name,
         "user_id": str(event.supplicant),

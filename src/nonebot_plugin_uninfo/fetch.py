@@ -25,8 +25,8 @@ class SuppliedData(TypedDict, total=False):
 class InfoFetcher(metaclass=ABCMeta):
     def __init__(self, adapter: SupportAdapter):
         self.adapter = adapter
-        self.endpoint: dict[type[Event], Callable[[Bot, Event], Awaitable[SuppliedData]]] = {}
-        self.wildcard: Optional[Callable[[Bot, Event], Awaitable[SuppliedData]]] = None
+        self.endpoint: dict[type[Event], Callable[[Bot, Event], Awaitable[dict]]] = {}
+        self.wildcard: Optional[Callable[[Bot, Event], Awaitable[dict]]] = None
 
     def supply(self, func: TSupplier) -> TSupplier:
         event_type = get_type_hints(func)["event"]
@@ -53,26 +53,31 @@ class InfoFetcher(metaclass=ABCMeta):
     def extract_member(self, data: dict[str, Any], user: Optional[User]) -> Optional[Member]:
         pass
 
-    def parse(self, data: SuppliedData) -> Session:
-        user = self.extract_user(data)  # type: ignore
+    @abstractmethod
+    def supply_self(self, bot: Bot) -> SuppliedData:
+        pass
+
+    def parse(self, data: dict) -> Session:
+        user = self.extract_user(data)
         return Session(
             self_id=data["self_id"],
             adapter=data["adapter"],
             scope=data["scope"],
             user=user,
-            scene=self.extract_scene(data),  # type: ignore
-            member=self.extract_member(data, user),  # type: ignore
+            scene=self.extract_scene(data),
+            member=self.extract_member(data, user),
             operator=self.extract_member(data["operator"], None) if "operator" in data else None,  # type: ignore
         )
 
     async def fetch(self, bot: Bot, event: Event) -> Session:
         func = self.endpoint.get(type(event))
+        base = self.supply_self(bot)
         if func:
             data = await func(bot, event)
-            return self.parse(data)
+            return self.parse({**base, **data})
         if self.wildcard:
             data = await self.wildcard(bot, event)
-            return self.parse(data)
+            return self.parse({**base, **data})
         raise NotImplementedError(f"Event {type(event)} not supported yet")
 
     @abstractmethod

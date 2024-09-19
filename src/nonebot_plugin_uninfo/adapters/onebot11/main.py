@@ -22,6 +22,7 @@ from nonebot.exception import ActionFailed
 
 from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
 from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
+from nonebot_plugin_uninfo.fetch import SuppliedData
 from nonebot_plugin_uninfo.model import Member, MuteInfo, Role, Scene, SceneType, User
 
 ROLES = {
@@ -122,6 +123,13 @@ class InfoFetcher(BaseInfoFetcher):
             }
             yield self.extract_member(data, None)
 
+    def supply_self(self, bot: Bot) -> SuppliedData:
+        return {
+            "self_id": str(bot.self_id),
+            "adapter": SupportAdapter.onebot11,
+            "scope": SupportScope.qq_client,
+        }
+
 
 fetcher = InfoFetcher(SupportAdapter.onebot11)
 
@@ -129,9 +137,6 @@ fetcher = InfoFetcher(SupportAdapter.onebot11)
 @fetcher.supply
 async def _(bot, event: PrivateMessageEvent):
     return {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.onebot11,
-        "scope": SupportScope.qq_client,
         "user_id": str(event.user_id),
         "name": event.sender.nickname,
         "nickname": event.sender.card,
@@ -154,9 +159,6 @@ async def _(bot, event: Union[FriendAddNoticeEvent, FriendRecallNoticeEvent, Fri
         except ActionFailed:
             friend_info = {}
     return {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.onebot11,
-        "scope": SupportScope.qq_client,
         "user_id": str(event.user_id),
         "name": friend_info.get("nickname"),
         "nickname": friend_info.get("remark"),
@@ -175,9 +177,6 @@ async def _(bot, event: GroupMessageEvent):
     except ActionFailed:
         member_info = {}
     return {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.onebot11,
-        "scope": SupportScope.qq_client,
         "group_id": str(event.group_id),
         "group_name": group_info.get("group_name"),
         "user_id": str(event.user_id),
@@ -208,9 +207,6 @@ async def _(
     except ActionFailed:
         member_info = {}
     return {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.onebot11,
-        "scope": SupportScope.qq_client,
         "group_id": str(event.group_id),
         "group_name": group_info.get("group_name"),
         "user_id": str(event.user_id),
@@ -241,9 +237,6 @@ async def _(
             except ActionFailed:
                 friend_info = {}
         return {
-            "self_id": str(bot.self_id),
-            "adapter": SupportAdapter.onebot11,
-            "scope": SupportScope.qq_client,
             "user_id": str(event.user_id),
             "name": friend_info.get("nickname"),
             "nickname": friend_info.get("remark"),
@@ -262,9 +255,6 @@ async def _(
     except ActionFailed:
         member_info = {}
     return {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.onebot11,
-        "scope": SupportScope.qq_client,
         "group_id": str(event.group_id),
         "group_name": group_info.get("group_name"),
         "user_id": str(event.target_id),
@@ -309,9 +299,6 @@ async def _(
     except ActionFailed:
         operator_info = {}
     return {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.onebot11,
-        "scope": SupportScope.qq_client,
         "group_id": str(event.group_id),
         "group_name": group_info.get("group_name"),
         "user_id": str(event.user_id),
@@ -352,9 +339,6 @@ async def _(
     except ActionFailed:
         operator_info = {}
     return {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.onebot11,
-        "scope": SupportScope.qq_client,
         "group_id": str(event.group_id),
         "group_name": group_info.get("group_name"),
         "user_id": str(event.user_id),

@@ -6,6 +6,7 @@ from nonebot.adapters.satori.models import ChannelType
 
 from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
 from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
+from nonebot_plugin_uninfo.fetch import SuppliedData
 from nonebot_plugin_uninfo.model import Member, Role, Scene, SceneType, User
 
 ROLES = {
@@ -157,6 +158,13 @@ class InfoFetcher(BaseInfoFetcher):
             }
             yield self.extract_member(data, None)
 
+    def supply_self(self, bot: Bot) -> SuppliedData:
+        return {
+            "self_id": str(bot.self_id),
+            "adapter": SupportAdapter.satori,
+            "scope": SupportScope.ensure_satori(bot.platform),
+        }
+
 
 fetcher = InfoFetcher(SupportAdapter.satori)
 
@@ -180,9 +188,6 @@ async def _(bot: Bot, event: Event):
         name = event.user.name
         nickname = event.user.nick
     base = {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.satori,
-        "scope": SupportScope.ensure_satori(bot.platform),
         "user_id": user_id,
         "name": name,
         "nickname": nickname,

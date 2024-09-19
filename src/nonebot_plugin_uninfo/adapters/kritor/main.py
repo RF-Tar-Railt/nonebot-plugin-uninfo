@@ -17,6 +17,7 @@ from nonebot.exception import ActionFailed
 
 from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
 from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
+from nonebot_plugin_uninfo.fetch import SuppliedData
 from nonebot_plugin_uninfo.model import Member, MuteInfo, Role, Scene, SceneType, User
 
 ROLES = {
@@ -210,6 +211,13 @@ class InfoFetcher(BaseInfoFetcher):
         except ActionFailed:
             pass
 
+    def supply_self(self, bot: Bot) -> SuppliedData:
+        return {
+            "self_id": str(bot.self_id),
+            "adapter": SupportAdapter.kritor,
+            "scope": SupportScope.qq_client,
+        }
+
 
 fetcher = InfoFetcher(SupportAdapter.kritor)
 
@@ -223,9 +231,6 @@ async def _(bot: Bot, event: FriendMessage):
         user_info = {}
         remark = None
     return {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.kritor,
-        "scope": SupportScope.qq_client,
         "user_id": event.sender.uin,
         "name": event.sender.nick,
         "nickname": remark,
@@ -256,9 +261,6 @@ async def _(bot: Bot, event: GroupMessage):
         group_name = ""
         extra = {}
     return {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.kritor,
-        "scope": SupportScope.qq_client,
         "user_id": event.sender.uin,
         "group_id": event.sender.group_id,
         "name": nick,
@@ -276,9 +278,6 @@ async def _(bot: Bot, event: Union[StrangerMessage, NearbyMessage]):
     except ActionFailed:
         remark = None
     return {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.kritor,
-        "scope": SupportScope.qq_client,
         "user_id": event.sender.uin,
         "name": event.sender.nick,
         "nickname": remark,
@@ -309,9 +308,6 @@ async def _(bot: Bot, event: TempMessage):
         group_name = ""
         extra = {}
     return {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.kritor,
-        "scope": SupportScope.qq_client,
         "user_id": event.sender.uin,
         "parent_group_id": event.sender.group_id,
         "name": nick,
@@ -344,9 +340,6 @@ async def _(bot: Bot, event: GuildMessage):
         card = event.sender.nick
         extra = {}
     return {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.kritor,
-        "scope": SupportScope.qq_client,
         "user_id": event.sender.tiny_id,
         "name": event.sender.nick,
         "card": card,
@@ -374,9 +367,6 @@ async def _(bot: Bot, event: GroupApplyRequest):
     except ActionFailed:
         group_name = ""
     return {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.kritor,
-        "scope": SupportScope.qq_client,
         "user_id": event.applier_uin,
         "name": nick,
         "nickname": remark,
@@ -395,9 +385,6 @@ async def _(bot: Bot, event: FriendApplyRequest):
         nick = ""
         remark = None
     return {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.kritor,
-        "scope": SupportScope.qq_client,
         "user_id": event.applier_uin,
         "name": nick,
         "nickname": remark,
@@ -419,9 +406,6 @@ async def _(bot: Bot, event: InvitedJoinGroupRequest):
     except ActionFailed:
         group_name = ""
     return {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.kritor,
-        "scope": SupportScope.qq_client,
         "user_id": event.inviter_uin,
         "name": nick,
         "nickname": remark,

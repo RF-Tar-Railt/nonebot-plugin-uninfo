@@ -1,22 +1,23 @@
 from typing import Optional, Union
 
 from nonebot.adapters.dodo import Bot
-from nonebot.adapters.dodo.models import ChannelType
 from nonebot.adapters.dodo.event import (
-    ChannelMessageEvent,
-    MessageReactionEvent,
     CardMessageButtonClickEvent,
     CardMessageFormSubmitEvent,
     CardMessageListSubmitEvent,
+    ChannelArticleCommentEvent,
+    ChannelArticleEvent,
+    ChannelMessageEvent,
     ChannelVoiceMemberJoinEvent,
     ChannelVoiceMemberLeaveEvent,
-    ChannelArticleEvent,
-    ChannelArticleCommentEvent,
+    MessageReactionEvent,
     PersonalMessageEvent,
 )
+from nonebot.adapters.dodo.models import ChannelType
 
 from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
 from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
+from nonebot_plugin_uninfo.fetch import SuppliedData
 from nonebot_plugin_uninfo.model import Member, Role, Scene, SceneType, User
 
 
@@ -148,30 +149,30 @@ class InfoFetcher(BaseInfoFetcher):
                 break
             members = await bot.get_member_list(island_source_id=guild_id, page_size=100, max_id=members.max_id)
 
+    def supply_self(self, bot: Bot) -> SuppliedData:
+        return {
+            "self_id": str(bot.self_id),
+            "adapter": SupportAdapter.dodo,
+            "scope": SupportScope.dodo,
+        }
+
 
 fetcher = InfoFetcher(SupportAdapter.dodo)
 
 
-
 @fetcher.supply
 async def _(bot: Bot, event: PersonalMessageEvent):
-    base = {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.dodo,
-        "scope": SupportScope.dodo,
-    }
-    base |= {
+    return {
         "user_id": event.dodo_source_id,
         "name": event.personal.nick_name,
         "avatar": event.personal.avatar_url,
         "gender": "male" if event.personal.sex == 1 else "female" if event.personal.sex == 0 else "unknown",
     }
-    return base
 
 
 @fetcher.supply
 async def _(
-    bot: Bot, 
+    bot: Bot,
     event: Union[
         ChannelMessageEvent,
         MessageReactionEvent,
@@ -182,14 +183,9 @@ async def _(
         ChannelVoiceMemberLeaveEvent,
         ChannelArticleEvent,
         ChannelArticleCommentEvent,
-    ]
+    ],
 ):
     base = {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.dodo,
-        "scope": SupportScope.dodo,
-    }
-    base |= {
         "user_id": event.dodo_source_id,
         "name": event.personal.nick_name,
         "avatar": event.personal.avatar_url,

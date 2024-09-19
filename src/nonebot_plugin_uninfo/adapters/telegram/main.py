@@ -16,6 +16,7 @@ from nonebot.exception import ActionFailed
 
 from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
 from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
+from nonebot_plugin_uninfo.fetch import SuppliedData
 from nonebot_plugin_uninfo.model import Member, Role, Scene, SceneType, User
 
 ROLES = {
@@ -91,6 +92,13 @@ class InfoFetcher(BaseInfoFetcher):
     async def query_member(self, bot: Bot, guild_id: str):
         raise NotImplementedError
 
+    def supply_self(self, bot: Bot) -> SuppliedData:
+        return {
+            "self_id": str(bot.self_id),
+            "adapter": SupportAdapter.telegram,
+            "scope": SupportScope.telegram,
+        }
+
 
 fetcher = InfoFetcher(SupportAdapter.telegram)
 
@@ -98,9 +106,6 @@ fetcher = InfoFetcher(SupportAdapter.telegram)
 async def _supply_userdata(bot: Bot, user: Union[str, TelegramUser]):
     if isinstance(user, TelegramUser):
         res = {
-            "self_id": str(bot.self_id),
-            "adapter": SupportAdapter.telegram,
-            "scope": SupportScope.telegram,
             "user_id": str(user.id),
             "name": user.username or "",
             "nickname": user.first_name + (f" {user.last_name}" if user.last_name else ""),
@@ -108,9 +113,6 @@ async def _supply_userdata(bot: Bot, user: Union[str, TelegramUser]):
         }
     else:
         res = {
-            "self_id": str(bot.self_id),
-            "adapter": SupportAdapter.telegram,
-            "scope": SupportScope.telegram,
             "user_id": user,
             "name": "",
             "nickname": "",

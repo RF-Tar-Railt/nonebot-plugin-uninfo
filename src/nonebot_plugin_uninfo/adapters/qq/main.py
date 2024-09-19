@@ -16,6 +16,7 @@ from nonebot.exception import ActionFailed
 
 from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
 from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
+from nonebot_plugin_uninfo.fetch import SuppliedData
 from nonebot_plugin_uninfo.model import Member, Role, Scene, SceneType, User
 
 ROLES = {
@@ -125,6 +126,13 @@ class InfoFetcher(BaseInfoFetcher):
     async def query_member(self, bot: Bot, guild_id: str):
         raise NotImplementedError
 
+    def supply_self(self, bot: Bot) -> SuppliedData:
+        return {
+            "self_id": str(bot.self_id),
+            "adapter": SupportAdapter.qq,
+            "scope": SupportScope.qq_api,
+        }
+
 
 fetcher = InfoFetcher(SupportAdapter.qq)
 
@@ -160,14 +168,8 @@ async def _handle_role(bot: Bot, guild_id: str, channel_id: Union[str, None], ro
 
 @fetcher.supply
 async def _(bot: Bot, event: InteractionCreateEvent):
-    base = {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.qq,
-        "scope": SupportScope.qq_api,
-    }
     if event.chat_type == 2:
         return {
-            **base,
             "user_id": event.user_openid,
             "name": "",
             "nickname": "",
@@ -175,14 +177,13 @@ async def _(bot: Bot, event: InteractionCreateEvent):
         }
     if event.chat_type == 1:
         return {
-            **base,
             "user_id": event.group_member_openid,
             "name": "",
             "nickname": "",
             "avatar": f"https://q.qlogo.cn/qqapp/{bot.bot_info.id}/{event.group_member_openid}/100",
             "group_id": event.group_openid,
         }
-    base |= {
+    base = {
         "user_id": event.data.resolved.user_id,
         "name": "",
         "nickname": "",
@@ -213,9 +214,6 @@ async def _(bot: Bot, event: InteractionCreateEvent):
 @fetcher.supply
 async def _(bot: Bot, event: C2CMessageCreateEvent):
     return {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.qq,
-        "scope": SupportScope.qq_api,
         "user_id": event.author.user_openid,
         "name": "",
         "nickname": "",
@@ -226,9 +224,6 @@ async def _(bot: Bot, event: C2CMessageCreateEvent):
 @fetcher.supply
 async def _(bot: Bot, event: GroupAtMessageCreateEvent):
     return {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.qq,
-        "scope": SupportScope.qq_api,
         "user_id": event.author.member_openid,
         "name": "",
         "nickname": "",
@@ -239,13 +234,8 @@ async def _(bot: Bot, event: GroupAtMessageCreateEvent):
 
 @fetcher.supply_wildcard
 async def _(bot: Bot, event: Event):
-    base = {
-        "self_id": str(bot.self_id),
-        "adapter": SupportAdapter.qq,
-        "scope": SupportScope.qq_api,
-    }
     if isinstance(event, GuildMessageEvent):
-        base |= {
+        base = {
             "user_id": event.author.id,
             "name": event.author.username or "",
             "nickname": "",
@@ -271,7 +261,7 @@ async def _(bot: Bot, event: Event):
         return base
     if isinstance(event, MessageDeleteEvent):
         message_event = event.message
-        base |= {
+        base = {
             "user_id": message_event.author.id,
             "name": message_event.author.username or "",
             "nickname": "",
@@ -314,7 +304,7 @@ async def _(bot: Bot, event: Event):
         return base
     if isinstance(event, GuildEvent):
         me = bot.self_info
-        base |= {
+        base = {
             "user_id": me.id,
             "name": me.username or "",
             "nickname": "",
@@ -337,7 +327,7 @@ async def _(bot: Bot, event: Event):
             pass
         return base
     if isinstance(event, GuildMemberEvent):
-        base |= {
+        base = {
             "user_id": event.user.id,  # type: ignore
             "name": (event.user.username if event.user else "") or "",
             "nickname": event.nick or "",
@@ -367,7 +357,7 @@ async def _(bot: Bot, event: Event):
         return base
     if isinstance(event, ChannelEvent):
         me = bot.self_info
-        base |= {
+        base = {
             "user_id": me.id,
             "name": me.username or "",
             "nickname": "",
