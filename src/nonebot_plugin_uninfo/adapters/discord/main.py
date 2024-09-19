@@ -40,7 +40,8 @@ from nonebot.adapters.discord.event import (
 )
 
 from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
-from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher, SuppliedData
+from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
+from nonebot_plugin_uninfo.fetch import SuppliedData
 from nonebot_plugin_uninfo.model import Member, MuteInfo, Role, Scene, SceneType, User
 
 CHANNEL_TYPE = {
@@ -199,6 +200,7 @@ class InfoFetcher(BaseInfoFetcher):
             "adapter": SupportAdapter.discord,
             "scope": SupportScope.discord,
         }
+
 
 fetcher = InfoFetcher(SupportAdapter.discord)
 

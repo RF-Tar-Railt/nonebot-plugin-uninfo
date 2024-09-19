@@ -1,10 +1,11 @@
-from datetime import timedelta
-from typing import Optional, Union
+from typing import Optional
 
 from nonebot.adapters.console import Bot
 from nonebot.adapters.console.event import Event
+
 from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
-from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher, SuppliedData
+from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
+from nonebot_plugin_uninfo.fetch import SuppliedData
 from nonebot_plugin_uninfo.model import Scene, SceneType, User
 
 
@@ -42,6 +43,7 @@ class InfoFetcher(BaseInfoFetcher):
             "adapter": SupportAdapter.console,
             "scope": SupportScope.console,
         }
+
 
 fetcher = InfoFetcher(SupportAdapter.console)
 
