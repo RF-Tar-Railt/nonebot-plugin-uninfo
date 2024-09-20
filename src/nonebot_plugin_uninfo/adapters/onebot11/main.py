@@ -89,7 +89,54 @@ class InfoFetcher(BaseInfoFetcher):
             ),
         )
 
-    async def query_user(self, bot: Bot):
+    async def query_user(self, bot: Bot, user_id: str):
+        info = await bot.get_stranger_info(user_id=int(user_id))
+        data = {
+            "user_id": str(info["user_id"]),
+            "name": info["nickname"],
+            "nickname": info["nickname"],
+            "gender": info["sex"],
+        }
+        return self.extract_user(data)
+
+    async def query_scene(
+        self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: Optional[str] = None
+    ):
+        if scene_type == SceneType.PRIVATE:
+            if user := await self.query_user(bot, scene_id):
+                data = {
+                    "user_id": user.id,
+                    "name": user.name,
+                    "avatar": user.avatar,
+                }
+                return self.extract_scene(data)
+
+        elif scene_type == SceneType.GROUP:
+            group = await bot.get_group_info(group_id=int(scene_id))
+            data = {
+                "group_id": str(group["group_id"]),
+                "group_name": group["group_name"],
+            }
+            return self.extract_scene(data)
+
+    async def query_member(self, bot: Bot, scene_type: SceneType, scene_id: str, user_id: str):
+        if scene_type != SceneType.GROUP:
+            return
+        group_id = scene_id
+
+        member = await bot.get_group_member_info(group_id=int(group_id), user_id=int(user_id))
+        data = {
+            "group_id": group_id,
+            "user_id": str(member["user_id"]),
+            "name": member["nickname"],
+            "card": member["card"],
+            "role": member["role"],
+            "join_time": member.get("join_time"),
+            "gender": member["sex"],
+        }
+        return self.extract_member(data, None)
+
+    async def query_users(self, bot: Bot):
         friends = await bot.get_friend_list()
         for friend in friends:
             data = {
@@ -99,21 +146,36 @@ class InfoFetcher(BaseInfoFetcher):
             }
             yield self.extract_user(data)
 
-    async def query_scene(self, bot: Bot, guild_id: Optional[str]):
-        groups = await bot.get_group_list()
-        for group in groups:
-            if not guild_id or str(group["group_id"]) == guild_id:
+    async def query_scenes(
+        self, bot: Bot, scene_type: Optional[SceneType] = None, *, parent_scene_id: Optional[str] = None
+    ):
+        if scene_type is None or scene_type == SceneType.PRIVATE:
+            async for user in self.query_users(bot):
+                data = {
+                    "user_id": user.id,
+                    "name": user.name,
+                    "avatar": user.avatar,
+                }
+                yield self.extract_scene(data)
+
+        if scene_type is None or scene_type == SceneType.GROUP:
+            groups = await bot.get_group_list()
+            for group in groups:
                 data = {
                     "group_id": str(group["group_id"]),
                     "group_name": group["group_name"],
                 }
                 yield self.extract_scene(data)
 
-    async def query_member(self, bot: Bot, guild_id: str):
-        members = await bot.get_group_member_list(group_id=int(guild_id))
+    async def query_members(self, bot: Bot, scene_type: SceneType, scene_id: str):
+        if scene_type != SceneType.GROUP:
+            return
+        group_id = scene_id
+
+        members = await bot.get_group_member_list(group_id=int(group_id))
         for member in members:
             data = {
-                "group_id": str(guild_id),
+                "group_id": group_id,
                 "user_id": str(member["user_id"]),
                 "name": member["nickname"],
                 "card": member["card"],
@@ -135,7 +197,7 @@ fetcher = InfoFetcher(SupportAdapter.onebot11)
 
 
 @fetcher.supply
-async def _(bot, event: PrivateMessageEvent):
+async def _(bot: Bot, event: PrivateMessageEvent):
     return {
         "user_id": str(event.user_id),
         "name": event.sender.nickname,
@@ -145,8 +207,8 @@ async def _(bot, event: PrivateMessageEvent):
 
 
 @fetcher.supply
-async def _(bot, event: Union[FriendAddNoticeEvent, FriendRecallNoticeEvent, FriendRequestEvent]):
-    async for friend in fetcher.query_user(bot):
+async def _(bot: Bot, event: Union[FriendAddNoticeEvent, FriendRecallNoticeEvent, FriendRequestEvent]):
+    async for friend in fetcher.query_users(bot):
         if friend.id == str(event.user_id):
             friend_info = {
                 "nickname": friend.name,
@@ -167,7 +229,7 @@ async def _(bot, event: Union[FriendAddNoticeEvent, FriendRecallNoticeEvent, Fri
 
 
 @fetcher.supply
-async def _(bot, event: GroupMessageEvent):
+async def _(bot: Bot, event: GroupMessageEvent):
     try:
         group_info = await bot.get_group_info(group_id=event.group_id)
     except ActionFailed:
@@ -224,7 +286,7 @@ async def _(
     event: PokeNotifyEvent,
 ):
     if not event.group_id:
-        async for friend in fetcher.query_user(bot):
+        async for friend in fetcher.query_users(bot):
             if friend.id == str(event.user_id):
                 friend_info = {
                     "nickname": friend.name,

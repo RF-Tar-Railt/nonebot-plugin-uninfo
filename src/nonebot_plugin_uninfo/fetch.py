@@ -6,7 +6,7 @@ from typing_extensions import NotRequired, Required
 from nonebot.adapters import Bot, Event
 
 from .constraint import SupportAdapter, SupportScope
-from .model import Member, Scene, Session, User
+from .model import Member, Scene, SceneType, Session, User
 
 TE = TypeVar("TE", bound=Event)
 TB = TypeVar("TB", bound=Bot)
@@ -84,13 +84,29 @@ class InfoFetcher(metaclass=ABCMeta):
         raise NotImplementedError(f"Event {type(event)} not supported yet")
 
     @abstractmethod
-    def query_user(self, bot: Bot) -> AsyncGenerator[User, None]:
+    async def query_user(self, bot: Bot, user_id: str) -> Optional[User]:
         pass
 
     @abstractmethod
-    def query_scene(self, bot: Bot, guild_id: Optional[str]) -> AsyncGenerator[Scene, None]:
+    async def query_scene(
+        self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: Optional[str] = None
+    ) -> Optional[Scene]:
         pass
 
     @abstractmethod
-    def query_member(self, bot: Bot, guild_id: str) -> AsyncGenerator[Member, None]:
+    async def query_member(self, bot: Bot, scene_type: SceneType, scene_id: str, user_id: str) -> Optional[Member]:
+        pass
+
+    @abstractmethod
+    def query_users(self, bot: Bot) -> AsyncGenerator[User, None]:
+        pass
+
+    @abstractmethod
+    def query_scenes(
+        self, bot: Bot, scene_type: Optional[SceneType] = None, *, parent_scene_id: Optional[str] = None
+    ) -> AsyncGenerator[Scene, None]:
+        pass
+
+    @abstractmethod
+    def query_members(self, bot: Bot, scene_type: SceneType, scene_id: str) -> AsyncGenerator[Member, None]:
         pass

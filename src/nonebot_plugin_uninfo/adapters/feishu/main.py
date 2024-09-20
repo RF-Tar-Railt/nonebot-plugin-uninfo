@@ -10,8 +10,11 @@ from nonebot_plugin_uninfo.fetch import SuppliedData
 from nonebot_plugin_uninfo.model import Member, Role, Scene, SceneType, User
 
 
-class InfoFetcher(BaseInfoFetcher):
+def _handle_gender(gender: int) -> str:
+    return "male" if gender == 1 else "female" if gender == 2 else "unknown"
 
+
+class InfoFetcher(BaseInfoFetcher):
     def extract_user(self, data: dict[str, Any]) -> User:
         return User(
             id=data["user_id"],
@@ -56,7 +59,54 @@ class InfoFetcher(BaseInfoFetcher):
             role=data.get("role", Role("MEMBER", 1, "member")),
         )
 
-    async def query_user(self, bot: Bot):
+    async def query_user(self, bot: Bot, user_id: str):
+        resp = await bot.call_api(
+            f"contact/v3/users/{user_id}",
+            method="GET",
+            query={"user_id_type": "open_id"},
+        )
+        info = resp["data"]["user"]
+        return self.extract_user(
+            {
+                "user_id": info["open_id"],
+                "name": info["name"],
+                "nickname": info["nickname"],
+                "avatar": info["avatar"]["avatar_origin"],
+                "gender": _handle_gender(info["gender"]),
+            }
+        )
+
+    async def query_scene(
+        self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: Optional[str] = None
+    ):
+        if scene_type == SceneType.PRIVATE:
+            if user := await self.query_user(bot, scene_id):
+                return self.extract_scene(
+                    {
+                        "user_id": user.id,
+                        "name": user.name,
+                        "avatar": user.avatar,
+                    }
+                )
+
+        elif scene_type == SceneType.GROUP:
+            resp = await bot.call_api(
+                f"im/v1/chats/{scene_id}",
+                method="GET",
+            )
+            info = resp["data"]
+            return self.extract_scene(
+                {
+                    "group_id": scene_id,
+                    "group_name": info["name"],
+                    "group_avatar": info["avatar"],
+                }
+            )
+
+    async def query_member(self, bot: Bot, scene_type: SceneType, scene_id: str, user_id: str):
+        raise NotImplementedError
+
+    async def query_users(self, bot: Bot):
         has_more1 = True
         has_more2 = True
         params1 = {}
@@ -86,7 +136,7 @@ class InfoFetcher(BaseInfoFetcher):
                             query={"user_id_type": user["member_id_type"]},
                         )
                         info = resp["data"]["user"]
-                        gender = "male" if info["gender"] == 1 else "female" if info["gender"] == 2 else "unknown"
+                        gender = _handle_gender(info["gender"])
                         yield self.extract_user(
                             {
                                 "user_id": info["open_id"],
@@ -97,7 +147,24 @@ class InfoFetcher(BaseInfoFetcher):
                             }
                         )
 
-    async def query_scene(self, bot: Bot, guild_id: Optional[str]):
+    async def query_scenes(
+        self, bot: Bot, scene_type: Optional[SceneType] = None, *, parent_scene_id: Optional[str] = None
+    ):
+        if scene_type is None or scene_type == SceneType.PRIVATE:
+            async for user in self.query_users(bot):
+                yield self.extract_scene(
+                    {
+                        "user_id": user.id,
+                        "name": user.name,
+                        "avatar": user.avatar,
+                    }
+                )
+            if scene_type == SceneType.PRIVATE:
+                return
+
+        if scene_type is not None and scene_type != SceneType.GROUP:
+            return
+
         params = {}
         has_more = True
         while has_more:
@@ -110,18 +177,21 @@ class InfoFetcher(BaseInfoFetcher):
             params["page_token"] = page_token
             has_more = resp["data"]["has_more"]
             for chat in resp["data"]["items"]:
-                if not guild_id or chat["chat_id"] == guild_id:
-                    yield self.extract_scene(
-                        {
-                            "group_id": chat["chat_id"],
-                            "group_name": chat["name"],
-                            "group_avatar": chat["avatar"],
-                        }
-                    )
+                yield self.extract_scene(
+                    {
+                        "group_id": chat["chat_id"],
+                        "group_name": chat["name"],
+                        "group_avatar": chat["avatar"],
+                    }
+                )
 
-    async def query_member(self, bot: Bot, guild_id: str):
+    async def query_members(self, bot: Bot, scene_type: SceneType, scene_id: str):
+        if scene_type != SceneType.GROUP:
+            return
+        group_id = scene_id
+
         resp = await bot.call_api(
-            f"im/v1/chats/{guild_id}",
+            f"im/v1/chats/{group_id}",
             method="GET",
         )
         owner_id = resp["data"]["owner_id"]
@@ -136,7 +206,7 @@ class InfoFetcher(BaseInfoFetcher):
         params = {}
         while has_more:
             resp = await bot.call_api(
-                f"im/v1/chats/{guild_id}/members",
+                f"im/v1/chats/{group_id}/members",
                 method="GET",
                 query=params,
             )
@@ -157,7 +227,7 @@ class InfoFetcher(BaseInfoFetcher):
                         "avatar": info["avatar"]["avatar_origin"],
                         "nickname": info["nickname"],
                         "member_name": member["name"],
-                        "group_id": guild_id,
+                        "group_id": group_id,
                         "role": (
                             Role("OWNER", 100, "owner")
                             if member["open_id"] == owner_id
@@ -188,7 +258,7 @@ async def _(bot: Bot, event: Union[GroupMessageEvent, PrivateMessageEvent]):
             query={"user_id_type": "open_id"},
         )
         info = resp["data"]["user"]
-        user["gender"] = "male" if info["gender"] == 1 else "female" if info["gender"] == 2 else "unknown"
+        user["gender"] = _handle_gender(info["gender"])
         user["name"] = info["name"]
         user["avatar"] = info["avatar"]["avatar_origin"]
         user["nickname"] = info["nickname"]

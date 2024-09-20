@@ -94,7 +94,67 @@ class InfoFetcher(BaseInfoFetcher):
             ),
         )
 
-    async def query_user(self, bot: Bot):
+    async def query_user(self, bot: Bot, user_id: str):
+        info = await bot.get_user_info(user_id=user_id)
+        data = {
+            "user_id": info["user_id"],
+            "name": info["user_name"],
+            "nickname": info["user_remark"],
+        }
+        return self.extract_user(data)
+
+    async def query_scene(
+        self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: Optional[str] = None
+    ):
+        if scene_type == SceneType.PRIVATE:
+            if user := await self.query_user(bot, scene_id):
+                data = {
+                    "user_id": user.id,
+                    "name": user.name,
+                    "nickname": user.nick,
+                }
+                return self.extract_scene(data)
+
+        elif scene_type == SceneType.GROUP:
+            group_info = await bot.get_group_info(group_id=scene_id)
+            data = {
+                "group_id": group_info["group_id"],
+                "group_name": group_info["group_name"],
+            }
+            return self.extract_scene(data)
+
+        elif scene_type == SceneType.GUILD:
+            guild_info = await bot.get_guild_info(guild_id=scene_id)
+            data = {
+                "guild_id": guild_info["guild_id"],
+                "guild_name": guild_info["guild_name"],
+            }
+            return self.extract_scene(data)
+
+    async def query_member(self, bot: Bot, scene_type: SceneType, scene_id: str, user_id: str):
+        if scene_type == SceneType.GROUP:
+            group_id = scene_id
+            member_info = await bot.get_group_member_info(group_id=group_id, user_id=user_id)
+            data = {
+                "group_id": group_id,
+                "user_id": member_info["user_id"],
+                "name": member_info["user_name"],
+                "displayname": member_info["user_displayname"],
+            }
+            return self.extract_member(data, None)
+
+        elif scene_type == SceneType.GUILD:
+            guild_id = scene_id
+            member_info = await bot.get_guild_member_info(guild_id=guild_id, user_id=user_id)
+            data = {
+                "guild_id": guild_id,
+                "user_id": member_info["user_id"],
+                "name": member_info["user_name"],
+                "displayname": member_info["user_displayname"],
+            }
+            return self.extract_member(data, None)
+
+    async def query_users(self, bot: Bot):
         friends = await bot.get_friend_list()
         for friend in friends:
             data = {
@@ -104,23 +164,40 @@ class InfoFetcher(BaseInfoFetcher):
             }
             yield self.extract_user(data)
 
-    async def query_scene(self, bot: Bot, guild_id: Optional[str]):
-        groups = await bot.get_group_list()
-        for group in groups:
-            data = {
-                "group_id": group["group_id"],
-                "group_name": group["group_name"],
-            }
-            if not guild_id or group["group_id"] == guild_id:
+    async def query_scenes(
+        self, bot: Bot, scene_type: Optional[SceneType] = None, *, parent_scene_id: Optional[str] = None
+    ):
+        if scene_type is None or scene_type == SceneType.PRIVATE:
+            async for user in self.query_users(bot):
+                data = {
+                    "user_id": user.id,
+                    "name": user.name,
+                    "avatar": user.avatar,
+                }
                 yield self.extract_scene(data)
-        guilds = await bot.get_guild_list()
-        for guild in guilds:
-            data = {
-                "guild_id": guild["guild_id"],
-                "guild_name": guild["guild_name"],
-            }
-            if not guild_id or guild["guild_id"] == guild_id:
+
+        if scene_type is None or scene_type == SceneType.GROUP:
+            groups = await bot.get_group_list()
+            for group in groups:
+                data = {
+                    "group_id": group["group_id"],
+                    "group_name": group["group_name"],
+                }
                 yield self.extract_scene(data)
+
+        if scene_type is None or scene_type >= SceneType.GUILD:
+            guilds = await bot.get_guild_list()
+            for guild in guilds:
+                if parent_scene_id is not None and guild["guild_id"] != parent_scene_id:
+                    continue
+                data = {
+                    "guild_id": guild["guild_id"],
+                    "guild_name": guild["guild_name"],
+                }
+                if scene_type is None or scene_type == SceneType.GUILD:
+                    yield self.extract_scene(data)
+                if scene_type == SceneType.GUILD:
+                    continue
                 channels = await bot.get_channel_list(guild_id=guild["guild_id"])
                 for channel in channels:
                     data = {
@@ -131,31 +208,30 @@ class InfoFetcher(BaseInfoFetcher):
                     }
                     yield self.extract_scene(data)
 
-    async def query_member(self, bot: Bot, guild_id: str):
-        try:
-            group_members = await bot.get_group_member_list(group_id=guild_id)
-        except ActionFailed:
-            group_members = []
-        for member in group_members:
-            data = {
-                "group_id": guild_id,
-                "user_id": member["user_id"],
-                "name": member["user_name"],
-                "displayname": member["user_displayname"],
-            }
-            yield self.extract_member(data, None)
-        try:
+    async def query_members(self, bot: Bot, scene_type: SceneType, scene_id: str):
+        if scene_type == SceneType.GROUP:
+            group_id = scene_id
+            group_members = await bot.get_group_member_list(group_id=group_id)
+            for member in group_members:
+                data = {
+                    "group_id": group_id,
+                    "user_id": member["user_id"],
+                    "name": member["user_name"],
+                    "displayname": member["user_displayname"],
+                }
+                yield self.extract_member(data, None)
+
+        elif scene_type == SceneType.GUILD:
+            guild_id = scene_id
             guild_members = await bot.get_guild_member_list(guild_id=guild_id)
-        except ActionFailed:
-            guild_members = []
-        for member in guild_members:
-            data = {
-                "guild_id": guild_id,
-                "user_id": member["user_id"],
-                "name": member["user_name"],
-                "displayname": member["user_displayname"],
-            }
-            yield self.extract_member(data, None)
+            for member in guild_members:
+                data = {
+                    "guild_id": guild_id,
+                    "user_id": member["user_id"],
+                    "name": member["user_name"],
+                    "displayname": member["user_displayname"],
+                }
+                yield self.extract_member(data, None)
 
     def supply_self(self, bot: Bot) -> SuppliedData:
         return {

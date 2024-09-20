@@ -101,16 +101,58 @@ class InfoFetcher(BaseInfoFetcher):
             )
         return None
 
-    async def query_user(self, bot: Bot):
+    async def query_user(self, bot: Bot, user_id: str):
         raise NotImplementedError
 
-    async def query_scene(self, bot: Bot, guild_id: Optional[str]):
+    async def query_scene(
+        self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: Optional[str] = None
+    ):
+        if scene_type == SceneType.GUILD:
+            guild = await bot.get_guild(guild_id=scene_id)
+            return Scene(id=guild.id, type=SceneType.GUILD, name=guild.name, avatar=guild.icon)
+
+        elif scene_type >= SceneType.CHANNEL_TEXT:
+            channel = await bot.get_channel(channel_id=scene_id)
+            guild = await bot.get_guild(guild_id=channel.guild_id)
+            return Scene(
+                id=channel.id,
+                type=CHANNEL_TYPE.get(channel.type, SceneType.CHANNEL_TEXT),
+                name=channel.name,
+                parent=Scene(id=guild.id, type=SceneType.GUILD, name=guild.name, avatar=guild.icon),
+            )
+
+    async def query_member(self, bot: Bot, scene_type: SceneType, scene_id: str, user_id: str):
+        if scene_type == SceneType.GUILD:
+            member = await bot.get_member(guild_id=scene_id, user_id=user_id)
+            return Member(
+                User(
+                    id=member.user.id if member.user else user_id,
+                    name=(member.user.username if member.user else "") or "",
+                    avatar=member.user.avatar if member.user else None,
+                ),
+                nick=member.nick,
+                role=await _handle_role(bot, scene_id, None, member.roles or []),
+                joined_at=member.joined_at,
+            )
+
+    async def query_users(self, bot: Bot):
+        raise NotImplementedError
+
+    async def query_scenes(
+        self, bot: Bot, scene_type: Optional[SceneType] = None, *, parent_scene_id: Optional[str] = None
+    ):
+        if scene_type is not None and scene_type < SceneType.GUILD:
+            return
+
         guilds = await bot.guilds(limit=100)
         while guilds:
             for guild in guilds:
-                if not guild_id or guild.id == guild_id:
+                if parent_scene_id is None or guild.id == parent_scene_id:
                     _guild = Scene(id=guild.id, type=SceneType.GUILD, name=guild.name, avatar=guild.icon)
-                    yield _guild
+                    if scene_type is None or scene_type == SceneType.GUILD:
+                        yield _guild
+                    if scene_type == SceneType.GUILD:
+                        continue
                     channels = await bot.get_channels(guild_id=guild.id)
                     for channel in channels:
                         yield Scene(
@@ -123,7 +165,7 @@ class InfoFetcher(BaseInfoFetcher):
                 break
             guilds = await bot.guilds(limit=100, after=guilds[-1].id)
 
-    async def query_member(self, bot: Bot, guild_id: str):
+    async def query_members(self, bot: Bot, scene_type: SceneType, scene_id: str):
         raise NotImplementedError
 
     def supply_self(self, bot: Bot) -> SuppliedData:
