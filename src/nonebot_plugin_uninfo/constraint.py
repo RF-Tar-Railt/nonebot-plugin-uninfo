@@ -1,11 +1,18 @@
-from enum import Enum
-
+import sys
 from nonebot.utils import logger_wrapper
 
 log = logger_wrapper("Plugin-Uninfo")
 
+if sys.version_info >= (3, 11):
+    from enum import Enum, StrEnum
+else:
+    from enum import Enum
 
-class SupportAdapter(str, Enum):
+    class StrEnum(str, Enum):
+        pass
+
+
+class SupportAdapter(StrEnum):
     """支持的适配器"""
 
     console = "Console"
@@ -26,7 +33,7 @@ class SupportAdapter(str, Enum):
     nonebug = "fake"
 
 
-class SupportScope(str, Enum):
+class SupportScope(StrEnum):
     """支持的平台范围"""
 
     qq_client = "QQClient"
@@ -55,7 +62,7 @@ class SupportScope(str, Enum):
 
     onebot12_other = "Onebot12"
     """ob12 的其他平台"""
-    satori_other = "satori"
+    satori_other = "Satori"
     """satori 的其他平台"""
 
     unknown = "Unknown"

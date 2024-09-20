@@ -3,8 +3,6 @@ from datetime import datetime, timedelta
 from enum import IntEnum
 from typing import Optional, Union
 
-from nonebot.adapters import Adapter
-
 from .constraint import SupportAdapter, SupportScope
 
 
@@ -99,8 +97,8 @@ class Member:
 class Session:
     self_id: str
     """机器人id"""
-    adapter: Union[str, type[Adapter], SupportAdapter]
-    """适配器名称，若为 None 则需要明确指定 Bot 对象"""
+    adapter: Union[str, SupportAdapter]
+    """适配器名称"""
     scope: Union[str, SupportScope]
     """适配器范围，相比 adapter 更指向实际平台"""
     scene: Scene
