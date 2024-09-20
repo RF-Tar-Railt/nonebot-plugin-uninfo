@@ -5,7 +5,7 @@ from nonebot.params import Depends
 
 from .adapters import INFO_FETCHER_MAPPING
 from .fetch import InfoFetcher
-from .model import Member, Scene, Session, User
+from .model import Member, Scene, SceneType, Session, User
 
 
 async def get_session(bot: Bot, event):
@@ -31,41 +31,75 @@ class Interface:
         self.bot = bot
         self.fetcher = fetcher
 
+    async def get_user(self, user_id: str) -> Optional[User]:
+        try:
+            return await self.fetcher.query_user(self.bot, user_id)
+        except NotImplementedError:
+            pass
+
+        async for user in self.iter_users():
+            if user.id == user_id:
+                return user
+
+    async def get_scene(
+        self, scene_type: SceneType, scene_id: str, *, parent_scene_id: Optional[str] = None
+    ) -> Optional[Scene]:
+        try:
+            return await self.fetcher.query_scene(self.bot, scene_type, scene_id, parent_scene_id=parent_scene_id)
+        except NotImplementedError:
+            pass
+
+        async for scene in self.iter_scenes(scene_type, parent_scene_id=parent_scene_id):
+            if scene.type == scene_type and scene.id == scene_id:
+                return scene
+
+    async def get_member(self, scene_type: SceneType, scene_id: str, user_id: str) -> Optional[Member]:
+        try:
+            return await self.fetcher.query_member(self.bot, scene_type, scene_id, user_id)
+        except NotImplementedError:
+            pass
+
+        async for member in self.iter_members(scene_type, scene_id):
+            if member.user.id == user_id:
+                return member
+
     async def get_users(self) -> list[User]:
         ans = []
         async for user in self.iter_users():
             ans.append(user)
         return ans
 
-    async def get_scenes(self, guild_id: Optional[str] = None) -> list[Scene]:
+    async def get_scenes(
+        self, scene_type: Optional[SceneType] = None, *, parent_scene_id: Optional[str] = None
+    ) -> list[Scene]:
         ans = []
-        async for scene in self.iter_scenes(guild_id):
+        async for scene in self.iter_scenes(scene_type, parent_scene_id=parent_scene_id):
             ans.append(scene)
         return ans
 
-    async def get_members(self, guild_id: str) -> list[Member]:
+    async def get_members(self, scene_type: SceneType, scene_id: str) -> list[Member]:
         ans = []
-        async for member in self.iter_members(guild_id):
+        async for member in self.iter_members(scene_type, scene_id):
             ans.append(member)
         return ans
 
     async def iter_users(self):
         try:
-            async for user in self.fetcher.query_user(self.bot):
+            async for user in self.fetcher.query_users(self.bot):
                 yield user
         except NotImplementedError:
             return
 
-    async def iter_scenes(self, guild_id: Optional[str] = None):
+    async def iter_scenes(self, scene_type: Optional[SceneType] = None, *, parent_scene_id: Optional[str] = None):
         try:
-            async for scene in self.fetcher.query_scene(self.bot, guild_id):
+            async for scene in self.fetcher.query_scenes(self.bot, scene_type, parent_scene_id=parent_scene_id):
                 yield scene
         except NotImplementedError:
             return
 
-    async def iter_members(self, guild_id: str):
+    async def iter_members(self, scene_type: SceneType, scene_id: str):
         try:
-            async for member in self.fetcher.query_member(self.bot, guild_id):
+            async for member in self.fetcher.query_members(self.bot, scene_type, scene_id):
                 yield member
         except NotImplementedError:
             return

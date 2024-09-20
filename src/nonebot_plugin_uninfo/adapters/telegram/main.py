@@ -83,13 +83,57 @@ class InfoFetcher(BaseInfoFetcher):
             role=Role(*ROLES[data["role"]], data["role"]) if "role" in data else None,
         )
 
-    async def query_user(self, bot: Bot):
+    async def query_user(self, bot: Bot, user_id: str):
+        data = await _supply_userdata(bot, user_id)
+        if data["name"] or data["nickname"] or data["avatar"]:
+            return self.extract_user(data)
+
+    async def query_scene(
+        self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: Optional[str] = None
+    ):
+        if scene_type == SceneType.PRIVATE:
+            if user := await self.query_user(bot, scene_id):
+                data = {
+                    "user_id": user.id,
+                    "name": user.name,
+                    "nickname": user.nick,
+                    "avatar": user.avatar,
+                }
+                return self.extract_scene(data)
+
+        elif scene_type == SceneType.GROUP:
+            chat = await bot.get_chat(chat_id=int(scene_id))
+            data = {
+                "chat_id": str(chat.id),
+                "chat_name": chat.title,
+            }
+            return self.extract_scene(data)
+
+        elif scene_type >= SceneType.CHANNEL_TEXT and parent_scene_id is not None:
+            chat = await bot.get_chat(chat_id=parent_scene_id)
+            data = {
+                "chat_id": str(chat.id),
+                "chat_name": chat.title,
+                "thread_id": scene_id,
+            }
+            return self.extract_scene(data)
+
+    async def query_member(self, bot: Bot, scene_type: SceneType, scene_id: str, user_id: str):
+        if scene_type >= SceneType.GROUP:
+            member = await bot.get_chat_member(chat_id=scene_id, user_id=int(user_id))
+            data = await _supply_userdata(bot, member.user)
+            data["role"] = member.status
+            return self.extract_member(data, None)
+
+    async def query_users(self, bot: Bot):
         raise NotImplementedError
 
-    async def query_scene(self, bot: Bot, guild_id: Optional[str]):
+    async def query_scenes(
+        self, bot: Bot, scene_type: Optional[SceneType] = None, *, parent_scene_id: Optional[str] = None
+    ):
         raise NotImplementedError
 
-    async def query_member(self, bot: Bot, guild_id: str):
+    async def query_members(self, bot: Bot, scene_type: SceneType, scene_id: str):
         raise NotImplementedError
 
     def supply_self(self, bot: Bot) -> SuppliedData:

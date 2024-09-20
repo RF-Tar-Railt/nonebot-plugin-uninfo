@@ -21,6 +21,10 @@ from nonebot_plugin_uninfo.fetch import SuppliedData
 from nonebot_plugin_uninfo.model import Member, Role, Scene, SceneType, User
 
 
+def _handle_gender(sex: int) -> str:
+    return "male" if sex == 1 else "female" if sex == 0 else "unknown"
+
+
 async def _handle_role(bot: Bot, guild_id: str, user_id: str):
     res = []
     resp = await bot.get_member_role_list(island_source_id=guild_id, dodo_source_id=user_id)
@@ -106,20 +110,73 @@ class InfoFetcher(BaseInfoFetcher):
             )
         return None
 
-    async def query_user(self, bot: Bot):
+    async def query_user(self, bot: Bot, user_id: str):
         raise NotImplementedError
 
-    async def query_scene(self, bot: Bot, guild_id: Optional[str]):
+    async def query_scene(
+        self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: Optional[str] = None
+    ):
+        if scene_type == SceneType.GUILD:
+            guild = await bot.get_island_info(island_source_id=scene_id)
+            return self.extract_scene(
+                {
+                    "guild_id": guild.island_source_id,
+                    "guild_name": guild.island_name,
+                    "guild_avatar": guild.cover_url,
+                }
+            )
+
+        elif scene_type >= SceneType.CHANNEL_TEXT:
+            channel = await bot.get_channel_info(channel_id=scene_id)
+            return self.extract_scene(
+                {
+                    "channel_id": channel.channel_id,
+                    "channel_name": channel.channel_name,
+                    "channel_type": CHANNEL_TYPE.get(channel.channel_type, SceneType.CHANNEL_TEXT),
+                }
+            )
+
+    async def query_member(self, bot: Bot, scene_type: SceneType, scene_id: str, user_id: str):
+        if scene_type != SceneType.GUILD:
+            return
+        guild_id = scene_id
+
+        member = await bot.get_member_info(island_source_id=guild_id, dodo_source_id=user_id)
+        user = User(
+            id=member.dodo_source_id,
+            name=member.personal_nick_name,
+            avatar=member.avatar_url,
+            gender=_handle_gender(member.sex),
+        )
+        return Member(
+            user=user,
+            nick=member.nick_name,
+            role=await _handle_role(bot, guild_id, member.dodo_source_id),
+            joined_at=member.join_time,
+        )
+
+    async def query_users(self, bot: Bot):
+        raise NotImplementedError
+
+    async def query_scenes(
+        self, bot: Bot, scene_type: Optional[SceneType] = None, *, parent_scene_id: Optional[str] = None
+    ):
+        if scene_type in (SceneType.PRIVATE, SceneType.GROUP):
+            return
+
         guilds = await bot.get_island_list()
         for guild in guilds:
-            if not guild_id or guild_id == guild.island_source_id:
+            if parent_scene_id is None or parent_scene_id == guild.island_source_id:
                 _guild = Scene(
                     id=guild.island_source_id,
                     type=SceneType.GUILD,
                     name=guild.island_name,
                     avatar=guild.cover_url,
                 )
-                yield _guild
+                if scene_type is None or scene_type == SceneType.GUILD:
+                    yield _guild
+                if scene_type == SceneType.GUILD:
+                    continue
                 channels = await bot.get_channel_list(island_source_id=guild.island_source_id)
                 for channel in channels:
                     yield Scene(
@@ -129,7 +186,11 @@ class InfoFetcher(BaseInfoFetcher):
                         parent=_guild,
                     )
 
-    async def query_member(self, bot: Bot, guild_id: str):
+    async def query_members(self, bot: Bot, scene_type: SceneType, scene_id: str):
+        if scene_type != SceneType.GUILD:
+            return
+        guild_id = scene_id
+
         members = await bot.get_member_list(island_source_id=guild_id, page_size=100)
         while members.list:
             for member in members.list:
@@ -137,7 +198,7 @@ class InfoFetcher(BaseInfoFetcher):
                     id=member.dodo_source_id,
                     name=member.personal_nick_name,
                     avatar=member.avatar_url,
-                    gender="male" if member.sex == 1 else "female" if member.sex == 0 else "unknown",
+                    gender=_handle_gender(member.sex),
                 )
                 yield Member(
                     user=user,
@@ -166,7 +227,7 @@ async def _(bot: Bot, event: PersonalMessageEvent):
         "user_id": event.dodo_source_id,
         "name": event.personal.nick_name,
         "avatar": event.personal.avatar_url,
-        "gender": "male" if event.personal.sex == 1 else "female" if event.personal.sex == 0 else "unknown",
+        "gender": _handle_gender(event.personal.sex),
     }
 
 
@@ -189,7 +250,7 @@ async def _(
         "user_id": event.dodo_source_id,
         "name": event.personal.nick_name,
         "avatar": event.personal.avatar_url,
-        "gender": "male" if event.personal.sex == 1 else "female" if event.personal.sex == 0 else "unknown",
+        "gender": _handle_gender(event.personal.sex),
     }
     guild = await bot.get_island_info(island_source_id=event.island_source_id)
     base |= {

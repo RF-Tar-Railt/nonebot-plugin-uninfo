@@ -2,7 +2,8 @@ from typing import Optional
 
 from nonebot.adapters.satori import Bot
 from nonebot.adapters.satori.event import Event
-from nonebot.adapters.satori.models import ChannelType
+from nonebot.adapters.satori.models import ChannelType, Channel, Guild
+from nonebot.adapters.satori.models import User as SatoriUser
 
 from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
 from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
@@ -79,7 +80,7 @@ class InfoFetcher(BaseInfoFetcher):
             joined_at=data["joined_at"],
         )
 
-    def _pack_user(self, user):
+    def _pack_user(self, user: SatoriUser):
         data = {
             "user_id": user.id,
             "name": user.name,
@@ -88,16 +89,7 @@ class InfoFetcher(BaseInfoFetcher):
         }
         return self.extract_user(data)
 
-    async def query_user(self, bot: Bot):
-        friends = await bot.friend_list()
-        for friend in friends.data:
-            yield self._pack_user(friend)
-        while friends.next:
-            friends = await bot.friend_list(next_token=friends.next)
-            for friend in friends.data:
-                yield self._pack_user(friend)
-
-    def _pack_guild(self, bot: Bot, guild):
+    def _pack_guild(self, bot: Bot, guild: Guild):
         data = {
             "scene_id": guild.id,
             "scene_type": SceneType.GROUP if "guild.plain" in bot._self_info.features else SceneType.GUILD,
@@ -106,7 +98,7 @@ class InfoFetcher(BaseInfoFetcher):
         }
         return self.extract_scene(data)
 
-    def _pack_channel(self, bot: Bot, guild, channel):
+    def _pack_channel(self, bot: Bot, guild: Guild, channel: Channel):
         data = {
             "scene_id": channel.id,
             "scene_type": SceneType.GROUP if "guild.plain" else TYPE_MAPPING[channel.type],
@@ -118,11 +110,78 @@ class InfoFetcher(BaseInfoFetcher):
         }
         return self.extract_scene(data)
 
-    async def query_scene(self, bot: Bot, guild_id: Optional[str]):
+    async def query_user(self, bot: Bot, user_id: str):
+        user = await bot.user_get(user_id=user_id)
+        return self._pack_user(user)
+
+    async def query_scene(
+        self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: Optional[str] = None
+    ):
+        if scene_type == SceneType.PRIVATE:
+            user = await bot.user_get(user_id=scene_id)
+            data = {
+                "scene_id": user.id,
+                "scene_type": SceneType.PRIVATE,
+                "scene_name": user.name,
+                "scene_avatar": user.avatar,
+            }
+            return self.extract_scene(data)
+
+        if SceneType.GROUP <= scene_type <= SceneType.GUILD:
+            guild = await bot.guild_get(guild_id=scene_id)
+            return self._pack_guild(bot, guild)
+
+        elif scene_type >= SceneType.CHANNEL_TEXT and parent_scene_id is not None:
+            guild = await bot.guild_get(guild_id=parent_scene_id)
+            channel = await bot.channel_get(channel_id=scene_id)
+            return self._pack_channel(bot, guild, channel)
+
+    async def query_member(self, bot: Bot, scene_type: SceneType, scene_id: str, user_id: str):
+        if scene_type in (SceneType.GUILD, SceneType.GROUP):
+            member = await bot.guild_member_get(guild_id=scene_id, user_id=user_id)
+            if member.user:
+                data = {
+                    "scene_id": scene_id,
+                    "user_id": member.user.id,
+                    "name": member.user.name,
+                    "nickname": member.user.nick,
+                    "member_name": member.nick,
+                    "joined_at": member.joined_at,
+                }
+                return self.extract_member(data, None)
+
+    async def query_users(self, bot: Bot):
+        friends = await bot.friend_list()
+        for friend in friends.data:
+            yield self._pack_user(friend)
+        while friends.next:
+            friends = await bot.friend_list(next_token=friends.next)
+            for friend in friends.data:
+                yield self._pack_user(friend)
+
+    async def query_scenes(
+        self, bot: Bot, scene_type: Optional[SceneType] = None, *, parent_scene_id: Optional[str] = None
+    ):
+        if scene_type is None or scene_type == SceneType.PRIVATE:
+            async for user in self.query_users(bot):
+                data = {
+                    "scene_id": user.id,
+                    "scene_type": SceneType.PRIVATE,
+                    "scene_name": user.name,
+                    "scene_avatar": user.avatar,
+                }
+                yield self.extract_scene(data)
+            if scene_type == SceneType.PRIVATE:
+                return
+
         guilds = await bot.guild_list()
         for guild in guilds.data:
-            if not guild_id or guild.id == guild_id:
-                yield self._pack_guild(bot, guild)
+            if parent_scene_id is None or guild.id == parent_scene_id:
+                _guild = self._pack_guild(bot, guild)
+                if scene_type is None or scene_type == _guild.type:
+                    yield _guild
+                if scene_type is not None and scene_type < SceneType.CHANNEL_TEXT:
+                    continue
                 channels = await bot.channel_list(guild_id=guild.id)
                 for channel in channels.data:
                     yield self._pack_channel(bot, guild, channel)
@@ -133,8 +192,12 @@ class InfoFetcher(BaseInfoFetcher):
         while guilds.next:
             guilds = await bot.guild_list(next_token=guilds.next)
             for guild in guilds.data:
-                if not guild_id or guild.id == guild_id:
-                    yield self._pack_guild(bot, guild)
+                if parent_scene_id is None or guild.id == parent_scene_id:
+                    _guild = self._pack_guild(bot, guild)
+                    if scene_type is None or scene_type == _guild.type:
+                        yield _guild
+                    if scene_type is not None and scene_type < SceneType.CHANNEL_TEXT:
+                        continue
                     channels = await bot.channel_list(guild_id=guild.id)
                     for channel in channels.data:
                         yield self._pack_channel(bot, guild, channel)
@@ -143,7 +206,10 @@ class InfoFetcher(BaseInfoFetcher):
                         for channel in channels.data:
                             yield self._pack_channel(bot, guild, channel)
 
-    async def query_member(self, bot: Bot, guild_id: str):
+    async def query_members(self, bot: Bot, scene_type: SceneType, scene_id: str):
+        if scene_type not in (SceneType.GUILD, SceneType.GROUP):
+            return
+        guild_id = scene_id
         members = await bot.guild_member_list(guild_id=guild_id)
         for member in members.data:
             if not member.user:

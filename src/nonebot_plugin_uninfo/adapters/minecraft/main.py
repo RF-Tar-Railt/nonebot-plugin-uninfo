@@ -26,13 +26,26 @@ class InfoFetcher(BaseInfoFetcher):
     def extract_member(self, data, user: Optional[User]):
         return None
 
-    async def query_user(self, bot: Bot):
+    async def query_user(self, bot: Bot, user_id: str):
         raise NotImplementedError
 
-    async def query_scene(self, bot: Bot, guild_id: Optional[str]):
+    async def query_scene(
+        self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: Optional[str] = None
+    ):
         raise NotImplementedError
 
-    async def query_member(self, bot: Bot, guild_id: str):
+    async def query_member(self, bot: Bot, scene_type: SceneType, scene_id: str, user_id: str):
+        raise NotImplementedError
+
+    async def query_users(self, bot: Bot):
+        raise NotImplementedError
+
+    async def query_scenes(
+        self, bot: Bot, scene_type: Optional[SceneType] = None, *, parent_scene_id: Optional[str] = None
+    ):
+        raise NotImplementedError
+
+    async def query_members(self, bot: Bot, scene_type: SceneType, scene_id: str):
         raise NotImplementedError
 
     def supply_self(self, bot: Bot) -> SuppliedData:

@@ -106,7 +106,57 @@ class InfoFetcher(BaseInfoFetcher):
             ),
         )
 
-    async def query_user(self, bot: Bot):
+    async def query_user(self, bot: Bot, user_id: str):
+        friend = await bot.get_friend(target=int(user_id))
+        data = {
+            "user_id": str(friend.id),
+            "name": friend.nickname,
+            "nickname": friend.remark,
+        }
+        return self.extract_user(data)
+
+    async def query_scene(
+        self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: Optional[str] = None
+    ):
+        if scene_type == SceneType.PRIVATE:
+            if user := await self.query_user(bot, scene_id):
+                data = {
+                    "user_id": user.id,
+                    "name": user.name,
+                    "avatar": user.avatar,
+                }
+                return self.extract_scene(data)
+
+        elif scene_type == SceneType.GROUP:
+            group = await bot.get_group(target=int(scene_id))
+            data = {
+                "group_id": str(group.id),
+                "group_name": group.name,
+            }
+            return self.extract_scene(data)
+
+    async def query_member(self, bot: Bot, scene_type: SceneType, scene_id: str, user_id: str):
+        if scene_type == SceneType.GROUP:
+            group_id = scene_id
+            member = await bot.get_member(group=int(group_id), target=int(user_id))
+            data = {
+                "group_id": group_id,
+                "user_id": str(member.id),
+                "name": member.name,
+                "card": member.name,
+                "role": member.permission,
+                "join_time": member.join_timestamp,
+                "mute_duration": member.mute_time,
+            }
+            try:
+                info = await bot.get_member_profile(group=int(group_id), member=member.id)
+                data["name"] = info.nickname
+                data["gender"] = info.sex.lower()
+            except ActionFailed:
+                pass
+            return self.extract_member(data, None)
+
+    async def query_users(self, bot: Bot):
         friends = await bot.get_friend_list()
         for friend in friends:
             data = {
@@ -116,23 +166,42 @@ class InfoFetcher(BaseInfoFetcher):
             }
             yield self.extract_user(data)
 
-    async def query_scene(self, bot: Bot, guild_id: Optional[str]):
-        groups = await bot.get_group_list()
-        for group in groups:
-            if not guild_id or str(group.id) == guild_id:
+    async def query_scenes(
+        self, bot: Bot, scene_type: Optional[SceneType] = None, *, parent_scene_id: Optional[str] = None
+    ):
+        if scene_type is not None and scene_type > SceneType.GROUP:
+            return
+
+        if scene_type is None or scene_type == SceneType.PRIVATE:
+            async for user in self.query_users(bot):
                 data = {
-                    "group_id": str(group.id),
-                    "group_name": group.name,
+                    "user_id": user.id,
+                    "name": user.name,
+                    "avatar": user.avatar,
                 }
                 yield self.extract_scene(data)
+            if scene_type == SceneType.PRIVATE:
+                return
 
-    async def query_member(self, bot: Bot, guild_id: str):
-        members = await bot.get_member_list(group=int(guild_id))
+        groups = await bot.get_group_list()
+        for group in groups:
+            data = {
+                "group_id": str(group.id),
+                "group_name": group.name,
+            }
+            yield self.extract_scene(data)
+
+    async def query_members(self, bot: Bot, scene_type: SceneType, scene_id: str):
+        if scene_type != SceneType.GROUP:
+            return
+
+        group_id = scene_id
+        members = await bot.get_member_list(group=int(group_id))
         for member in members:
             try:
-                info = await bot.get_member_profile(group=int(guild_id), member=member.id)
+                info = await bot.get_member_profile(group=int(group_id), member=member.id)
                 data = {
-                    "group_id": str(guild_id),
+                    "group_id": group_id,
                     "user_id": str(member.id),
                     "name": info.nickname,
                     "card": member.name,
@@ -143,7 +212,7 @@ class InfoFetcher(BaseInfoFetcher):
                 }
             except ActionFailed:
                 data = {
-                    "group_id": str(guild_id),
+                    "group_id": group_id,
                     "user_id": str(member.id),
                     "name": member.name,
                     "card": member.name,
