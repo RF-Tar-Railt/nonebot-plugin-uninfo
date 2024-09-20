@@ -8,13 +8,10 @@ log = logger_wrapper("Plugin-Uninfo")
 class SupportAdapter(str, Enum):
     """支持的适配器"""
 
-    # bilibili = "BilibiliLive"
     console = "Console"
-    # ding = "Ding"
     discord = "Discord"
     dodo = "DoDo"
     feishu = "Feishu"
-    # github = "GitHub"
     kritor = "Kritor"
     kook = "Kaiheila"
     minecraft = "Minecraft"
@@ -24,7 +21,7 @@ class SupportAdapter(str, Enum):
     qq = "QQ"
     satori = "Satori"
     telegram = "Telegram"
-    tail_chat = "Tailchat"
+    # tail_chat = "Tailchat"  # TODO: Add tailchat support
 
     nonebug = "fake"
 
@@ -44,7 +41,7 @@ class SupportScope(str, Enum):
     dodo = "DoDo"
     kook = "Kaiheila"
     minecraft = "Minecraft"
-    # github = "GitHub"
+    github = "GitHub"
     console = "Console"
     ding = "Ding"
     wechat = "WeChat"
@@ -60,6 +57,9 @@ class SupportScope(str, Enum):
     """ob12 的其他平台"""
     satori_other = "satori"
     """satori 的其他平台"""
+
+    unknown = "Unknown"
+    """未知平台"""
 
     @staticmethod
     def ensure_ob12(platform: str):
@@ -94,13 +94,10 @@ class SupportScope(str, Enum):
 class SupportAdapterModule(str, Enum):
     """支持的适配器的模块路径"""
 
-    # bilibili = "nonebot.adapters.bilibili"
     console = "nonebot.adapters.console"
-    # ding = "nonebot.adapters.ding"
     discord = "nonebot.adapters.discord"
     dodo = "nonebot.adapters.dodo"
     feishu = "nonebot.adapters.feishu"
-    # github = "nonebot.adapters.github"
     kritor = "nonebot.adapters.kritor"
     kook = "nonebot.adapters.kaiheila"
     minecraft = "nonebot.adapters.minecraft"
@@ -110,4 +107,4 @@ class SupportAdapterModule(str, Enum):
     qq = "nonebot.adapters.qq"
     satori = "nonebot.adapters.satori"
     telegram = "nonebot.adapters.telegram"
-    tail_chat = "nonebot_adapter_tailchat"
+    # tail_chat = "nonebot_adapter_tailchat"  # TODO: Add tailchat support

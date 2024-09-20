@@ -72,12 +72,15 @@ class InfoFetcher(metaclass=ABCMeta):
     async def fetch(self, bot: Bot, event: Event) -> Session:
         func = self.endpoint.get(type(event))
         base = self.supply_self(bot)
-        if func:
-            data = await func(bot, event)
-            return self.parse({**base, **data})
-        if self.wildcard:
-            data = await self.wildcard(bot, event)
-            return self.parse({**base, **data})
+        try:
+            if func:
+                data = await func(bot, event)
+                return self.parse({**base, **data})
+            if self.wildcard:
+                data = await self.wildcard(bot, event)
+                return self.parse({**base, **data})
+        except NotImplementedError:
+            pass
         raise NotImplementedError(f"Event {type(event)} not supported yet")
 
     @abstractmethod
