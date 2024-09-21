@@ -94,6 +94,6 @@ adapters = [
     { name = "Satori", module_name = "nonebot.adapters.satori" },
     { name = "QQ", module_name = "nonebot.adapters.qq" }
 ]
-plugins = ["example1"]
+plugins = ["example"]
 plugin_dirs = []
 builtin_plugins = []

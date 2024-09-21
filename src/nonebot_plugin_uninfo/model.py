@@ -1,10 +1,12 @@
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 from enum import IntEnum
+import json
 from typing import Optional, TypedDict, Union
 from typing_extensions import Required
 
 from .constraint import SupportAdapter, SupportScope
+from .util import DatetimeJsonEncoder
 
 
 class BasicInfo(TypedDict):
@@ -28,8 +30,21 @@ class SceneType(IntEnum):
     """子频道语音场景"""
 
 
+class ModelMixin:
+
+    @classmethod
+    def load(cls, data: dict):
+        return cls(**data)  # type: ignore  # noqa
+
+    def dump(self):
+        return asdict(self)  # type: ignore  # noqa
+
+    def dump_json(self):
+        return json.dumps(self.dump(), cls=DatetimeJsonEncoder)
+
+
 @dataclass
-class Scene:
+class Scene(ModelMixin):
     id: str
     type: SceneType
     name: Optional[str] = None
@@ -52,9 +67,16 @@ class Scene:
     def is_channel(self) -> bool:
         return self.type.value >= SceneType.CHANNEL_TEXT.value
 
+    @classmethod
+    def load(cls, data: dict):
+        data["type"] = SceneType(data["type"])
+        if data.get("parent"):
+            data["parent"] = cls.load(data["parent"])
+        return cls(**data)
+
 
 @dataclass
-class User:
+class User(ModelMixin):
     id: str
     name: Optional[str] = None
     """用户名"""
@@ -65,14 +87,14 @@ class User:
 
 
 @dataclass
-class Role:
+class Role(ModelMixin):
     id: str
     level: int = 0
     name: Optional[str] = None
 
 
 @dataclass
-class MuteInfo:
+class MuteInfo(ModelMixin):
     muted: bool
     """是否被禁言"""
     duration: timedelta
@@ -83,10 +105,12 @@ class MuteInfo:
     def __post_init__(self):
         if self.duration.total_seconds() < 1:
             self.muted = False
+        if self.start_at and (datetime.now() - self.start_at) > self.duration:
+            self.muted = False
 
 
 @dataclass
-class Member:
+class Member(ModelMixin):
     user: User
     nick: Optional[str] = None
     """群员昵称"""
@@ -99,9 +123,18 @@ class Member:
     def id(self) -> str:
         return self.user.id
 
+    @classmethod
+    def load(cls, data: dict):
+        data["user"] = User.load(data["user"])
+        if data.get("role"):
+            data["role"] = Role.load(data["role"])
+        if data.get("mute"):
+            data["mute"] = MuteInfo.load(data["mute"])
+        return cls(**data)
+
 
 @dataclass
-class Session:
+class Session(ModelMixin):
     self_id: str
     """机器人id"""
     adapter: Union[str, SupportAdapter]
@@ -154,3 +187,15 @@ class Session:
     @property
     def basic(self) -> BasicInfo:
         return {"self_id": self.self_id, "adapter": SupportAdapter(self.adapter), "scope": SupportScope(self.scope)}
+
+    @classmethod
+    def load(cls, data: dict):
+        data["adapter"] = SupportAdapter(data["adapter"])
+        data["scope"] = SupportScope(data["scope"])
+        data["scene"] = Scene.load(data["scene"])
+        data["user"] = User.load(data["user"])
+        if data.get("member"):
+            data["member"] = Member.load(data["member"])
+        if data.get("operator"):
+            data["operator"] = Member.load(data["operator"])
+        return cls(**data)
