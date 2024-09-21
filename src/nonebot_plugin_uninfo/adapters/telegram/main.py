@@ -16,7 +16,7 @@ from nonebot.exception import ActionFailed
 
 from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
 from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
-from nonebot_plugin_uninfo.fetch import SuppliedData
+from nonebot_plugin_uninfo.fetch import BasicInfo
 from nonebot_plugin_uninfo.model import Member, Role, Scene, SceneType, User
 
 ROLES = {
@@ -136,7 +136,7 @@ class InfoFetcher(BaseInfoFetcher):
     async def query_members(self, bot: Bot, scene_type: SceneType, scene_id: str):
         raise NotImplementedError
 
-    def supply_self(self, bot: Bot) -> SuppliedData:
+    def supply_self(self, bot: Bot) -> BasicInfo:
         return {
             "self_id": str(bot.self_id),
             "adapter": SupportAdapter.telegram,

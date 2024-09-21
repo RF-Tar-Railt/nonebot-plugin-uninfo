@@ -31,6 +31,9 @@ class Interface:
         self.bot = bot
         self.fetcher = fetcher
 
+    def basic_info(self):
+        return self.fetcher.supply_self(self.bot)
+
     async def get_user(self, user_id: str) -> Optional[User]:
         try:
             return await self.fetcher.query_user(self.bot, user_id)

@@ -47,6 +47,7 @@ dev = [
     "nonebot-adapter-telegram>=0.1.0b17",
     "nonebot-adapter-kritor>=0.3.0",
     "nonebot-adapter-tailchat>=0.1.0b7",
+    "nonebot-plugin-alconna>=0.52.2",
 ]
 [tool.pdm.build]
 includes = ["src/nonebot_plugin_uninfo"]
@@ -93,6 +94,6 @@ adapters = [
     { name = "Satori", module_name = "nonebot.adapters.satori" },
     { name = "QQ", module_name = "nonebot.adapters.qq" }
 ]
-plugins = ["example"]
+plugins = ["example1"]
 plugin_dirs = []
 builtin_plugins = []

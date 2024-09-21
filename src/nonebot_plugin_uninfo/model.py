@@ -1,9 +1,17 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import IntEnum
-from typing import Optional, Union
+from typing import Optional, Union, TypedDict
+
+from typing_extensions import Required
 
 from .constraint import SupportAdapter, SupportScope
+
+
+class BasicInfo(TypedDict):
+    self_id: Required[str]
+    adapter: Required[SupportAdapter]
+    scope: Required[SupportScope]
 
 
 class SceneType(IntEnum):
@@ -131,3 +139,11 @@ class Session:
     def friend(self) -> Optional[Scene]:
         if self.scene.is_private:
             return self.scene
+
+    @property
+    def basic(self) -> BasicInfo:
+        return {
+            "self_id": self.self_id,
+            "adapter": SupportAdapter(self.adapter),
+            "scope": SupportScope(self.scope)
+        }

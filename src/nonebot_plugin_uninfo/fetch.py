@@ -1,25 +1,16 @@
 from abc import ABCMeta, abstractmethod
 from collections.abc import AsyncGenerator, Awaitable
-from typing import Any, Callable, Optional, TypedDict, TypeVar, Union, get_args, get_origin, get_type_hints
-from typing_extensions import NotRequired, Required
+from typing import Any, Callable, Optional, TypeVar, Union, get_args, get_origin, get_type_hints
 
 from nonebot.adapters import Bot, Event
 
-from .constraint import SupportAdapter, SupportScope
-from .model import Member, Scene, SceneType, Session, User
+from .constraint import SupportAdapter
+from .model import Member, Scene, SceneType, Session, User, BasicInfo
 
 TE = TypeVar("TE", bound=Event)
 TB = TypeVar("TB", bound=Bot)
 Supplier = Callable[[TB, TE], Awaitable[dict]]
 TSupplier = TypeVar("TSupplier", bound=Supplier)
-
-
-class SuppliedData(TypedDict, total=False):
-    self_id: Required[str]
-    adapter: Required[SupportAdapter]
-    scope: Required[SupportScope]
-
-    operator: NotRequired[dict]
 
 
 class InfoFetcher(metaclass=ABCMeta):
@@ -54,7 +45,7 @@ class InfoFetcher(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def supply_self(self, bot) -> SuppliedData:
+    def supply_self(self, bot) -> BasicInfo:
         pass
 
     def parse(self, data: dict) -> Session:

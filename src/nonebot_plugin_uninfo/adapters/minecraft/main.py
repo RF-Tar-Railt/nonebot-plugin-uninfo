@@ -5,7 +5,7 @@ from nonebot.adapters.minecraft.event.base import Event, MessageEvent, NoticeEve
 
 from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
 from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
-from nonebot_plugin_uninfo.fetch import SuppliedData
+from nonebot_plugin_uninfo.fetch import BasicInfo
 from nonebot_plugin_uninfo.model import Scene, SceneType, User
 
 
@@ -48,7 +48,7 @@ class InfoFetcher(BaseInfoFetcher):
     async def query_members(self, bot: Bot, scene_type: SceneType, scene_id: str):
         raise NotImplementedError
 
-    def supply_self(self, bot: Bot) -> SuppliedData:
+    def supply_self(self, bot: Bot) -> BasicInfo:
         return {
             "self_id": str(bot.self_id),
             "adapter": SupportAdapter.minecraft,
