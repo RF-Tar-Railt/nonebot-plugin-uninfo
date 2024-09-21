@@ -4,8 +4,8 @@ from nonebot.adapters.minecraft import Bot
 from nonebot.adapters.minecraft.event.base import Event, MessageEvent, NoticeEvent
 
 from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
-from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
 from nonebot_plugin_uninfo.fetch import BasicInfo
+from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
 from nonebot_plugin_uninfo.model import Scene, SceneType, User
 
 

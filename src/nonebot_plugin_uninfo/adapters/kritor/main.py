@@ -16,8 +16,8 @@ from nonebot.adapters.kritor.event import (
 from nonebot.exception import ActionFailed
 
 from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
-from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
 from nonebot_plugin_uninfo.fetch import BasicInfo
+from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
 from nonebot_plugin_uninfo.model import Member, MuteInfo, Role, Scene, SceneType, User
 
 ROLES = {
@@ -140,11 +140,11 @@ class InfoFetcher(BaseInfoFetcher):
                 "card": member_info.card,
                 "mute_duration": member_info.shut_up_time,
                 "join_time": member_info.join_time / 1000,
-                "role": "owner"
-                if member_info.uin == group_info.owner
-                else "admin"
-                if member_info.uin in group_info.admins
-                else "member",
+                "role": (
+                    "owner"
+                    if member_info.uin == group_info.owner
+                    else "admin" if member_info.uin in group_info.admins else "member"
+                ),
             }
             return self.extract_member(data, None)
 

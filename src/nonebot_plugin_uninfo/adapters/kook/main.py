@@ -6,8 +6,8 @@ from nonebot.adapters.kaiheila.api.model import Channel as KookChannel
 from nonebot.adapters.kaiheila.event import Event
 
 from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
-from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
 from nonebot_plugin_uninfo.fetch import BasicInfo
+from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
 from nonebot_plugin_uninfo.model import Member, MuteInfo, Role, Scene, SceneType, User
 
 

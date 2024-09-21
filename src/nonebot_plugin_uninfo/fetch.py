@@ -5,7 +5,7 @@ from typing import Any, Callable, Optional, TypeVar, Union, get_args, get_origin
 from nonebot.adapters import Bot, Event
 
 from .constraint import SupportAdapter
-from .model import Member, Scene, SceneType, Session, User, BasicInfo
+from .model import BasicInfo, Member, Scene, SceneType, Session, User
 
 TE = TypeVar("TE", bound=Event)
 TB = TypeVar("TB", bound=Bot)

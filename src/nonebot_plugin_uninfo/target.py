@@ -1,34 +1,34 @@
-from typing import Union, TYPE_CHECKING, overload
+from typing import TYPE_CHECKING, Union, overload
 
-from .model import Session, User, Member, Scene, BasicInfo
+from .model import BasicInfo, Member, Scene, Session, User
 
 if TYPE_CHECKING:
     from nonebot_plugin_alconna import Target
 
 
 @overload
-def to_target(model: Session) -> "Target":
-    ...
+def to_target(model: Session) -> "Target": ...
 
 
 @overload
-def to_target(model: Union[User, Member, Scene], info: BasicInfo) -> "Target":
-    ...
+def to_target(model: Union[User, Member, Scene], info: BasicInfo) -> "Target": ...
 
 
 def to_target(model: Union[Session, User, Member, Scene], info: Union[BasicInfo, None] = None) -> "Target":
     try:
-        from nonebot_plugin_alconna import Target
         from nonebot_plugin_alconna import SupportAdapter as AlconnaSupportAdapter
         from nonebot_plugin_alconna import SupportScope as AlconnaSupportScope
+        from nonebot_plugin_alconna import Target
     except ImportError:
         raise RuntimeError("Please install nonebot-plugin-alconna to use this function")
     if isinstance(model, Session):
         scene_id = model.scene.id
         scene_parent_id = model.scene.parent.id if model.scene.parent else ""
         return Target(
-            scene_id, scene_parent_id,
-            model.scene.is_private, model.scene.is_channel,
+            scene_id,
+            scene_parent_id,
+            model.scene.is_private,
+            model.scene.is_channel,
             self_id=model.self_id,
             adapter=AlconnaSupportAdapter(model.adapter),
             scope=AlconnaSupportScope(model.scope),
@@ -57,7 +57,8 @@ def to_target(model: Union[Session, User, Member, Scene], info: Union[BasicInfo,
         return Target(
             scene_id,
             scene_parent_id,
-            model.is_private, model.is_channel,
+            model.is_private,
+            model.is_channel,
             self_id=info["self_id"],
             adapter=AlconnaSupportAdapter(info["adapter"]),
             scope=AlconnaSupportScope(info["scope"]),

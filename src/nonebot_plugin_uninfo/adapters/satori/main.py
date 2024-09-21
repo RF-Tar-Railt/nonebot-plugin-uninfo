@@ -2,12 +2,12 @@ from typing import Optional
 
 from nonebot.adapters.satori import Bot
 from nonebot.adapters.satori.event import Event
-from nonebot.adapters.satori.models import ChannelType, Channel, Guild
+from nonebot.adapters.satori.models import Channel, ChannelType, Guild
 from nonebot.adapters.satori.models import User as SatoriUser
 
 from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
-from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
 from nonebot_plugin_uninfo.fetch import BasicInfo
+from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
 from nonebot_plugin_uninfo.model import Member, Role, Scene, SceneType, User
 
 ROLES = {

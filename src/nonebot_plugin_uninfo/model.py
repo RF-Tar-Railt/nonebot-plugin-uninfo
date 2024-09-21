@@ -1,8 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import IntEnum
-from typing import Optional, Union, TypedDict
-
+from typing import Optional, TypedDict, Union
 from typing_extensions import Required
 
 from .constraint import SupportAdapter, SupportScope
@@ -119,6 +118,18 @@ class Session:
     """平台名称，仅当目标适配器存在多个平台时使用"""
 
     @property
+    def id(self) -> str:
+        if self.scene.is_private:
+            if self.scene.parent:
+                return f"{self.scene.parent.id}_{self.user.id}"
+            return self.user.id
+        if self.scene.is_group:
+            return f"{self.scene.id}_{self.user.id}"
+        if self.scene.parent:
+            return f"{self.scene.parent.id}_{self.scene.id}_{self.user.id}"
+        return f"{self.scene.id}_{self.user.id}"
+
+    @property
     def guild(self) -> Optional[Scene]:
         if self.scene.is_guild:
             return self.scene
@@ -142,8 +153,4 @@ class Session:
 
     @property
     def basic(self) -> BasicInfo:
-        return {
-            "self_id": self.self_id,
-            "adapter": SupportAdapter(self.adapter),
-            "scope": SupportScope(self.scope)
-        }
+        return {"self_id": self.self_id, "adapter": SupportAdapter(self.adapter), "scope": SupportScope(self.scope)}
