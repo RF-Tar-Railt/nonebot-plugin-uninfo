@@ -85,7 +85,7 @@ reportShadowedImports = false
 disableBytesTypePromotions = true
 
 [tool.pdm.scripts]
-format = { composite = ["isort ./src/ ","black ./src/ ","ruff check ./src/"] }
+format = { composite = ["isort ./src/ example.py","black ./src/ example.py","ruff check ./src/ example.py"] }
 
 
 [tool.nonebot]

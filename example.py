@@ -1,8 +1,7 @@
-from nonebot_plugin_uninfo import Uninfo
-from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
-
 from nonebot import on_command, on_notice
 
+from nonebot_plugin_uninfo import Uninfo
+from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
 
 matcher = on_command("inspect", aliases={"查看"}, priority=1)
 
@@ -20,11 +19,13 @@ async def inspect(session: Uninfo):
     if session.scene.parent:
         if session.scene.is_private:
             texts.append(
-                f"群组 ID: {session.scene.parent.name + ' | ' if session.scene.parent.name else ''}{session.scene.parent.id}"
+                f"群组 ID: {session.scene.parent.name + ' | ' if session.scene.parent.name else ''}"
+                f"{session.scene.parent.id}"
             )
         else:
             texts.append(
-                f"频道 ID: {session.scene.parent.name + ' | ' if session.scene.parent.name else ''}{session.scene.parent.id}"
+                f"频道 ID: {session.scene.parent.name + ' | ' if session.scene.parent.name else ''}"
+                f"{session.scene.parent.id}"
             )
     if session.scene.is_group:
         texts.append(f"群组 ID: {session.scene.name + ' | ' if session.scene.name else ''}{session.scene.id}")
@@ -40,6 +41,7 @@ async def inspect(session: Uninfo):
 
 
 matcher1 = on_notice()
+
 
 @matcher1.handle()
 async def inspect1(session: Uninfo):
