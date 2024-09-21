@@ -102,6 +102,13 @@ class MuteInfo(ModelMixin):
     start_at: Optional[datetime] = None
     """禁言开始时间"""
 
+    @classmethod
+    def load(cls, data: dict):
+        data["duration"] = timedelta(seconds=data["duration"])
+        if data.get("start_at"):
+            data["start_at"] = datetime.fromtimestamp(data["start_at"])
+        return cls(**data)
+
     def __post_init__(self):
         if self.duration.total_seconds() < 1:
             self.muted = False
@@ -130,6 +137,8 @@ class Member(ModelMixin):
             data["role"] = Role.load(data["role"])
         if data.get("mute"):
             data["mute"] = MuteInfo.load(data["mute"])
+        if data.get("joined_at"):
+            data["joined_at"] = datetime.fromtimestamp(data["joined_at"])
         return cls(**data)
 
 
