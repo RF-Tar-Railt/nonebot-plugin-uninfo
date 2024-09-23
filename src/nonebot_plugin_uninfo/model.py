@@ -162,14 +162,20 @@ class Session(ModelMixin):
     @property
     def id(self) -> str:
         if self.scene.is_private:
+            return self.scene_path
+        return f"{self.scene_path}_{self.user.id}"
+
+    @property
+    def scene_path(self) -> str:
+        if self.scene.is_private:
             if self.scene.parent:
                 return f"{self.scene.parent.id}_{self.user.id}"
             return self.user.id
         if self.scene.is_group:
-            return f"{self.scene.id}_{self.user.id}"
+            return self.scene.id
         if self.scene.parent:
-            return f"{self.scene.parent.id}_{self.scene.id}_{self.user.id}"
-        return f"{self.scene.id}_{self.user.id}"
+            return f"{self.scene.parent.id}_{self.scene.id}"
+        return self.scene.id
 
     @property
     def guild(self) -> Optional[Scene]:
