@@ -162,11 +162,11 @@ class Session(ModelMixin):
     @property
     def id(self) -> str:
         if self.scene.is_private:
-            return self.scene_id
-        return f"{self.scene_id}_{self.user.id}"
+            return self.scene_path
+        return f"{self.scene_path}_{self.user.id}"
 
     @property
-    def scene_id(self) -> str:
+    def scene_path(self) -> str:
         if self.scene.is_private:
             if self.scene.parent:
                 return f"{self.scene.parent.id}_{self.user.id}"
