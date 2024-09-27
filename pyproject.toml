@@ -48,6 +48,7 @@ dev = [
     "nonebot-adapter-kritor>=0.3.0",
     "nonebot-adapter-tailchat>=0.1.0b7",
     "nonebot-plugin-alconna>=0.52.2",
+    "nonebot-plugin-orm[default]>=0.7.6",
 ]
 [tool.pdm.build]
 includes = ["src/nonebot_plugin_uninfo"]
