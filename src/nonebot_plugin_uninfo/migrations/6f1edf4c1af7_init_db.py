@@ -31,8 +31,8 @@ def upgrade(name: str = "") -> None:
         sa.Column("scope", sa.String(length=32), nullable=False),
         sa.Column("scene_id", sa.String(length=64), nullable=False),
         sa.Column("scene_type", sa.Integer(), nullable=False),
-        sa.Column("parent_scene_id", sa.String(length=64), nullable=True),
-        sa.Column("parent_scene_type", sa.Integer(), nullable=True),
+        sa.Column("parent_scene_id", sa.String(length=64), nullable=False),
+        sa.Column("parent_scene_type", sa.Integer(), nullable=False),
         sa.Column("user_id", sa.String(length=64), nullable=False),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_nonebot_plugin_uninfo_sessionmodel")),
         sa.UniqueConstraint(

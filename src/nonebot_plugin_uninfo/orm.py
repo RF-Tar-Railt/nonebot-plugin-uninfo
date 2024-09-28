@@ -41,8 +41,8 @@ class SessionModel(Model):
     scope: Mapped[str] = mapped_column(String(32))
     scene_id: Mapped[str] = mapped_column(String(64))
     scene_type: Mapped[int] = mapped_column(Integer)
-    parent_scene_id: Mapped[Optional[str]] = mapped_column(String(64))
-    parent_scene_type: Mapped[Optional[int]] = mapped_column(Integer)
+    parent_scene_id: Mapped[str] = mapped_column(String(64))
+    parent_scene_type: Mapped[int] = mapped_column(Integer)
     user_id: Mapped[str] = mapped_column(String(64))
 
     def to_session(self) -> Session:
@@ -57,7 +57,7 @@ class SessionModel(Model):
                     id=self.parent_scene_id,
                     type=SceneType(self.parent_scene_type),
                 )
-                if self.parent_scene_id is not None and self.parent_scene_type is not None
+                if self.parent_scene_id
                 else None,
             ),
             user=User(id=self.user_id),
@@ -77,7 +77,7 @@ class SessionModel(Model):
             return None
 
         scene = await interface.get_scene(
-            SceneType(self.scene_type), self.scene_id, parent_scene_id=self.parent_scene_id
+            SceneType(self.scene_type), self.scene_id, parent_scene_id=(self.parent_scene_id or None)
         )
         if not scene:
             return None
@@ -150,8 +150,8 @@ def _get_insert_mutex():
 
 
 async def get_session_persist_id(session: Session) -> int:
-    parent_scene_id = session.scene.parent.id if session.scene.parent else None
-    parent_scene_type = session.scene.parent.type.value if session.scene.parent else None
+    parent_scene_id = session.scene.parent.id if session.scene.parent else ""
+    parent_scene_type = session.scene.parent.type.value if session.scene.parent else 0
 
     statement = (
         select(SessionModel.id)
