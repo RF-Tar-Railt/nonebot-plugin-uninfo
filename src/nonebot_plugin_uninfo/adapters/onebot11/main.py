@@ -247,6 +247,7 @@ async def _(bot: Bot, event: GroupMessageEvent):
         "card": member_info.get("card"),
         "role": event.sender.role,
         "join_time": member_info.get("join_time"),
+        "gender": member_info.get("sex", "unknown"),
     }
 
 
@@ -277,6 +278,7 @@ async def _(
         "card": member_info.get("card"),
         "role": member_info.get("role"),
         "join_time": member_info.get("join_time"),
+        "gender": member_info.get("sex", "unknown"),
     }
 
 
@@ -325,6 +327,7 @@ async def _(
         "card": member_info.get("card"),
         "role": member_info.get("role"),
         "join_time": member_info.get("join_time"),
+        "gender": member_info.get("sex", "unknown"),
         "operator": {
             "group_id": str(event.group_id),
             "user_id": str(event.user_id),
@@ -333,6 +336,7 @@ async def _(
             "card": operator_info.get("card"),
             "role": operator_info.get("role"),
             "join_time": operator_info.get("join_time"),
+            "gender": operator_info.get("sex", "unknown"),
         },
     }
 
@@ -369,6 +373,7 @@ async def _(
         "card": member_info.get("card"),
         "role": member_info.get("role"),
         "join_time": member_info.get("join_time"),
+        "gender": member_info.get("sex", "unknown"),
         "operator": {
             "group_id": str(event.group_id),
             "user_id": str(event.operator_id),
@@ -377,6 +382,7 @@ async def _(
             "card": operator_info.get("card"),
             "role": operator_info.get("role"),
             "join_time": operator_info.get("join_time"),
+            "gender": operator_info.get("sex", "unknown"),
         },
     }
 
@@ -409,6 +415,7 @@ async def _(
         "card": member_info.get("card"),
         "role": member_info.get("role"),
         "join_time": member_info.get("join_time"),
+        "gender": member_info.get("sex", "unknown"),
         "mute_duration": event.duration,
         "operator": {
             "group_id": str(event.group_id),
@@ -418,5 +425,6 @@ async def _(
             "card": operator_info.get("card"),
             "role": operator_info.get("role"),
             "join_time": operator_info.get("join_time"),
+            "gender": operator_info.get("sex", "unknown"),
         },
     }
