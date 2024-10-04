@@ -2,17 +2,17 @@ import asyncio
 import sys
 from typing import Optional
 
-from nonebot import require, get_bots
+from nonebot import get_bots, require
 from nonebot.log import logger
+from nonebot.params import Depends
 
-from .model import Session, Scene, User, SceneType
-from .params import get_interface
-
+from .model import Scene, SceneType, Session, User
+from .params import UniSession, get_interface
 
 try:
     require("nonebot_plugin_orm")
     from nonebot_plugin_orm import Model, get_session
-    from sqlalchemy import Integer, String, UniqueConstraint, exc, select
+    from sqlalchemy import JSON, Integer, String, UniqueConstraint, exc, select
     from sqlalchemy.orm import Mapped, mapped_column
     from sqlalchemy.sql import ColumnElement
 except ImportError:
@@ -41,9 +41,12 @@ class SessionModel(Model):
     scope: Mapped[str] = mapped_column(String(32))
     scene_id: Mapped[str] = mapped_column(String(64))
     scene_type: Mapped[int] = mapped_column(Integer)
-    parent_scene_id: Mapped[str] = mapped_column(String(64))
-    parent_scene_type: Mapped[int] = mapped_column(Integer)
+    scene_data: Mapped[dict] = mapped_column(JSON)
+    parent_scene_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    parent_scene_type: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    parent_scene_data: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     user_id: Mapped[str] = mapped_column(String(64))
+    user_data: Mapped[dict] = mapped_column(JSON)
 
     def to_session(self) -> Session:
         return Session(
@@ -51,16 +54,24 @@ class SessionModel(Model):
             adapter=self.adapter,
             scope=self.scope,
             scene=Scene(
-                id=self.scene_id,
-                type=SceneType(self.scene_type),
-                parent=Scene(
-                    id=self.parent_scene_id,
-                    type=SceneType(self.parent_scene_type),
-                )
-                if self.parent_scene_id
-                else None,
+                **{
+                    **self.scene_data,
+                    "id": self.scene_id,
+                    "type": SceneType(self.scene_type),
+                    "parent": (
+                        Scene(
+                            **{
+                                **self.parent_scene_data,  # type: ignore
+                                "id": self.parent_scene_id,
+                                "type": SceneType(self.parent_scene_type),
+                            }
+                        )
+                        if self.parent_scene_id
+                        else None
+                    ),
+                }
             ),
-            user=User(id=self.user_id),
+            user=User(**{**self.user_data, "id": self.user_id}),
         )
 
     async def query_session(self) -> Optional[Session]:
@@ -82,7 +93,6 @@ class SessionModel(Model):
         if not scene:
             return None
 
-        member = None
         user = None
         member = await interface.get_member(SceneType(self.scene_type), self.scene_id, self.user_id)
         if member:
@@ -150,11 +160,11 @@ def _get_insert_mutex():
 
 
 async def get_session_persist_id(session: Session) -> int:
-    parent_scene_id = session.scene.parent.id if session.scene.parent else ""
-    parent_scene_type = session.scene.parent.type.value if session.scene.parent else 0
+    parent_scene_id = session.scene.parent.id if session.scene.parent else None
+    parent_scene_type = session.scene.parent.type.value if session.scene.parent else None
 
     statement = (
-        select(SessionModel.id)
+        select(SessionModel)
         .where(SessionModel.self_id == session.self_id)
         .where(SessionModel.adapter == session.adapter)
         .where(SessionModel.scope == session.scope)
@@ -166,8 +176,13 @@ async def get_session_persist_id(session: Session) -> int:
     )
 
     async with get_session() as db_session:
-        if persist_id := (await db_session.scalars(statement)).one_or_none():
-            return persist_id
+        if persist_model := (await db_session.scalars(statement)).one_or_none():
+            persist_model.scene_data = session.scene.dump()
+            persist_model.parent_scene_data = session.scene.parent.dump() if session.scene.parent else None
+            persist_model.user_data = session.user.dump()
+            await db_session.commit()
+            await db_session.refresh(persist_model)
+            return persist_model.id  # type: ignore
 
     session_model = SessionModel(
         self_id=session.self_id,
@@ -175,9 +190,12 @@ async def get_session_persist_id(session: Session) -> int:
         scope=session.scope,
         scene_id=session.scene.id,
         scene_type=session.scene.type.value,
+        scene_data=session.scene.dump(),
         parent_scene_id=parent_scene_id,
         parent_scene_type=parent_scene_type,
+        parent_scene_data=session.scene.parent.dump() if session.scene.parent else None,
         user_id=session.user.id,
+        user_data=session.user.dump(),
     )
 
     async with _get_insert_mutex():
@@ -191,9 +209,17 @@ async def get_session_persist_id(session: Session) -> int:
             logger.debug(f"session ({session}) is already inserted")
 
             async with get_session() as db_session:
-                return (await db_session.scalars(statement)).one()
+                return (await db_session.scalars(statement)).one().id
 
 
 async def get_session_model(persist_id: int) -> SessionModel:
     async with get_session() as db_session:
         return (await db_session.scalars(select(SessionModel).where(SessionModel.id == persist_id))).one()
+
+
+async def get_session_orm(session: Session = UniSession()):
+    return await get_session_model(await get_session_persist_id(session))
+
+
+def SessionOrm() -> SessionModel:
+    return Depends(get_session_orm)
