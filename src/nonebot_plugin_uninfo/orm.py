@@ -42,8 +42,8 @@ class SessionModel(Model):
     scene_id: Mapped[str] = mapped_column(String(64))
     scene_type: Mapped[int] = mapped_column(Integer)
     scene_data: Mapped[dict] = mapped_column(JSON)
-    parent_scene_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
-    parent_scene_type: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    parent_scene_id: Mapped[str] = mapped_column(String(64))
+    parent_scene_type: Mapped[int] = mapped_column(Integer)
     parent_scene_data: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     user_id: Mapped[str] = mapped_column(String(64))
     user_data: Mapped[dict] = mapped_column(JSON)
@@ -160,8 +160,8 @@ def _get_insert_mutex():
 
 
 async def get_session_persist_id(session: Session) -> int:
-    parent_scene_id = session.scene.parent.id if session.scene.parent else None
-    parent_scene_type = session.scene.parent.type.value if session.scene.parent else None
+    parent_scene_id = session.scene.parent.id if session.scene.parent else ""
+    parent_scene_type = session.scene.parent.type.value if session.scene.parent else -1
 
     statement = (
         select(SessionModel)
@@ -170,10 +170,12 @@ async def get_session_persist_id(session: Session) -> int:
         .where(SessionModel.scope == session.scope)
         .where(SessionModel.scene_id == session.scene.id)
         .where(SessionModel.scene_type == session.scene.type.value)
-        .where(SessionModel.parent_scene_id == parent_scene_id)
-        .where(SessionModel.parent_scene_type == parent_scene_type)
         .where(SessionModel.user_id == session.user.id)
     )
+
+    if session.scene.parent:
+        statement = statement.where(SessionModel.parent_scene_id == parent_scene_id)
+        statement = statement.where(SessionModel.parent_scene_type == parent_scene_type)
 
     async with get_session() as db_session:
         if persist_model := (await db_session.scalars(statement)).one_or_none():
