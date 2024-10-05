@@ -73,7 +73,7 @@ class SessionModel(Model):
                 }
             ),
             user=User(**{**self.user_data, "id": self.user_id}),
-            member=Member(**self.member_data) if self.member_data else None,
+            member=Member.load(self.member_data) if self.member_data else None,
         )
 
     async def query_session(self) -> Optional[Session]:
