@@ -6,7 +6,7 @@ from nonebot import get_bots, require
 from nonebot.log import logger
 from nonebot.params import Depends
 
-from .model import Scene, SceneType, Session, User
+from .model import Member, Scene, SceneType, Session, User
 from .params import UniSession, get_interface
 
 try:
@@ -44,9 +44,10 @@ class SessionModel(Model):
     scene_data: Mapped[dict] = mapped_column(JSON)
     parent_scene_id: Mapped[str] = mapped_column(String(64))
     parent_scene_type: Mapped[int] = mapped_column(Integer)
-    parent_scene_data: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    parent_scene_data: Mapped[Optional[dict]] = mapped_column(JSON)
     user_id: Mapped[str] = mapped_column(String(64))
     user_data: Mapped[dict] = mapped_column(JSON)
+    member_data: Mapped[Optional[dict]] = mapped_column(JSON)
 
     def to_session(self) -> Session:
         return Session(
@@ -61,7 +62,7 @@ class SessionModel(Model):
                     "parent": (
                         Scene(
                             **{
-                                **self.parent_scene_data,  # type: ignore
+                                **(self.parent_scene_data or {}),
                                 "id": self.parent_scene_id,
                                 "type": SceneType(self.parent_scene_type),
                             }
@@ -72,6 +73,7 @@ class SessionModel(Model):
                 }
             ),
             user=User(**{**self.user_data, "id": self.user_id}),
+            member=Member(**self.member_data) if self.member_data else None,
         )
 
     async def query_session(self) -> Optional[Session]:
@@ -162,6 +164,8 @@ def _get_insert_mutex():
 async def get_session_persist_id(session: Session) -> int:
     parent_scene_id = session.scene.parent.id if session.scene.parent else ""
     parent_scene_type = session.scene.parent.type.value if session.scene.parent else -1
+    parent_scene_data = session.scene.parent.dump() if session.scene.parent else None
+    member_data = session.member.dump() if session.member else None
 
     statement = (
         select(SessionModel)
@@ -180,11 +184,12 @@ async def get_session_persist_id(session: Session) -> int:
     async with get_session() as db_session:
         if persist_model := (await db_session.scalars(statement)).one_or_none():
             persist_model.scene_data = session.scene.dump()
-            persist_model.parent_scene_data = session.scene.parent.dump() if session.scene.parent else None
+            persist_model.parent_scene_data = parent_scene_data
             persist_model.user_data = session.user.dump()
+            persist_model.member_data = member_data
             await db_session.commit()
             await db_session.refresh(persist_model)
-            return persist_model.id  # type: ignore
+            return persist_model.id
 
     session_model = SessionModel(
         self_id=session.self_id,
@@ -195,9 +200,10 @@ async def get_session_persist_id(session: Session) -> int:
         scene_data=session.scene.dump(),
         parent_scene_id=parent_scene_id,
         parent_scene_type=parent_scene_type,
-        parent_scene_data=session.scene.parent.dump() if session.scene.parent else None,
+        parent_scene_data=parent_scene_data,
         user_id=session.user.id,
         user_data=session.user.dump(),
+        member_data=member_data,
     )
 
     async with _get_insert_mutex():
