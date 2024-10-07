@@ -3,7 +3,9 @@ from datetime import datetime, timedelta
 from enum import IntEnum
 import json
 from typing import Optional, TypedDict, Union
-from typing_extensions import Required
+from typing_extensions import Required, Self
+
+from nonebot.compat import custom_validation
 
 from .constraint import SupportAdapter, SupportScope
 from .util import DatetimeJsonEncoder
@@ -142,6 +144,7 @@ class Member(ModelMixin):
         return cls(**data)
 
 
+@custom_validation
 @dataclass
 class Session(ModelMixin):
     self_id: str
@@ -214,3 +217,13 @@ class Session(ModelMixin):
         if data.get("operator"):
             data["operator"] = Member.load(data["operator"])
         return cls(**data)
+
+    @classmethod
+    def __get_validators__(cls):
+        yield cls._validate
+
+    @classmethod
+    def _validate(cls, value) -> Self:
+        if isinstance(value, cls):
+            return value
+        raise ValueError(f"Type {type(value)} can not be converted to {cls}")
