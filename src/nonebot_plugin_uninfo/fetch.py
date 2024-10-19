@@ -1,9 +1,12 @@
+import asyncio
 from abc import ABCMeta, abstractmethod
 from collections.abc import AsyncGenerator, Awaitable
 from typing import Any, Callable, Optional, TypeVar, Union, get_args, get_origin, get_type_hints
 
 from nonebot.adapters import Bot, Event
+from nonebot import get_plugin_config
 
+from .config import Config
 from .constraint import SupportAdapter
 from .model import BasicInfo, Member, Scene, SceneType, Session, User
 
@@ -12,12 +15,15 @@ TB = TypeVar("TB", bound=Bot)
 Supplier = Callable[[TB, TE], Awaitable[dict]]
 TSupplier = TypeVar("TSupplier", bound=Supplier)
 
+conf = get_plugin_config(Config)
+
 
 class InfoFetcher(metaclass=ABCMeta):
     def __init__(self, adapter: SupportAdapter):
         self.adapter = adapter
         self.endpoint: dict[type[Event], Callable[[Bot, Event], Awaitable[dict]]] = {}
         self.wildcard: Optional[Callable[[Bot, Event], Awaitable[dict]]] = None
+        self.cache: dict[str, Session] = {}
 
     def supply(self, func: TSupplier) -> TSupplier:
         event_type = get_type_hints(func)["event"]
@@ -61,18 +67,34 @@ class InfoFetcher(metaclass=ABCMeta):
         )
 
     async def fetch(self, bot: Bot, event: Event) -> Session:
+        try:
+            sess_id = event.get_session_id()
+        except ValueError:
+            pass
+        else:
+            if sess_id in self.cache:
+                return self.cache[sess_id]
         func = self.endpoint.get(type(event))
         base = self.supply_self(bot)
         try:
             if func:
                 data = await func(bot, event)
-                return self.parse({**base, **data})
-            if self.wildcard:
+                sess = self.parse({**base, **data})
+            elif self.wildcard:
                 data = await self.wildcard(bot, event)
-                return self.parse({**base, **data})
+                sess = self.parse({**base, **data})
+            else:
+                raise NotImplementedError(f"Event {type(event)} not supported yet")
         except NotImplementedError:
-            pass
-        raise NotImplementedError(f"Event {type(event)} not supported yet")
+            raise NotImplementedError(f"Event {type(event)} not supported yet") from None
+        if conf.uninfo_cache:
+            try:
+                sess_id = event.get_session_id()
+                self.cache[sess_id] = sess
+                asyncio.get_running_loop().call_later(conf.uninfo_cache_expire, self.cache.pop, sess_id)
+            except ValueError:
+                pass
+        return sess
 
     @abstractmethod
     async def query_user(self, bot: Bot, user_id: str) -> Optional[User]:
@@ -85,7 +107,7 @@ class InfoFetcher(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    async def query_member(self, bot: Bot, scene_type: SceneType, scene_id: str, user_id: str) -> Optional[Member]:
+    async def query_member(self, bot: Bot, scene_type: SceneType, parent_scene_id: str, user_id: str) -> Optional[Member]:
         pass
 
     @abstractmethod
@@ -99,5 +121,5 @@ class InfoFetcher(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def query_members(self, bot: Bot, scene_type: SceneType, scene_id: str) -> AsyncGenerator[Member, None]:
+    def query_members(self, bot: Bot, scene_type: SceneType, parent_scene_id: str) -> AsyncGenerator[Member, None]:
         pass

@@ -1,5 +1,6 @@
 from nonebot.plugin import PluginMetadata
 
+from .config import Config
 from .constraint import SupportAdapter as SupportAdapter
 from .constraint import SupportAdapterModule
 from .constraint import SupportScope as SupportScope
@@ -37,6 +38,7 @@ __plugin_meta__ = PluginMetadata(
     description="多平台的会话信息(用户、群组、频道)获取插件",
     usage="session_info: Uninfo",
     type="library",
+    config=Config,
     homepage="https://github.com/RF-Tar-Railt/nonebot-plugin-uninfo",
     supported_adapters=set(SupportAdapterModule.__members__.values()),
 )
