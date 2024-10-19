@@ -54,3 +54,20 @@ else:
                 RuntimeWarning,
                 5,
             )
+
+
+def alter_get_fetcher(adapter_name: str):
+    if adapter_name in loaders:
+        try:
+            INFO_FETCHER_MAPPING[adapter_name] = loaders[adapter_name].get_fetcher()
+            return INFO_FETCHER_MAPPING[adapter_name]
+        except Exception as e:
+            warn(f"Failed to load uniseg adapter {adapter_name}: {e}", RuntimeWarning, 6)
+            return None
+    warn(
+        f"Adapter {adapter_name} is not found in the uniseg.adapters,"
+        f"please go to the github repo and create an issue for it.",
+        RuntimeWarning,
+        6,
+    )
+    return None

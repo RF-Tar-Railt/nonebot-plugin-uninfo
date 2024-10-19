@@ -3,7 +3,7 @@ from typing import Annotated, Optional
 from nonebot.adapters import Bot
 from nonebot.params import Depends
 
-from .adapters import INFO_FETCHER_MAPPING
+from .adapters import alter_get_fetcher, INFO_FETCHER_MAPPING
 from .fetch import InfoFetcher
 from .model import Member, Scene, SceneType, Session, User
 
@@ -11,6 +11,8 @@ from .model import Member, Scene, SceneType, Session, User
 async def get_session(bot: Bot, event):
     adapter = bot.adapter.get_name()
     fetcher = INFO_FETCHER_MAPPING.get(adapter)
+    if not fetcher:
+        fetcher = alter_get_fetcher(adapter)
     if fetcher:
         try:
             return await fetcher.fetch(bot, event)
