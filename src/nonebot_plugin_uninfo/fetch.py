@@ -1,10 +1,10 @@
-import asyncio
 from abc import ABCMeta, abstractmethod
+import asyncio
 from collections.abc import AsyncGenerator, Awaitable
 from typing import Any, Callable, Optional, TypeVar, Union, get_args, get_origin, get_type_hints
 
-from nonebot.adapters import Bot, Event
 from nonebot import get_plugin_config
+from nonebot.adapters import Bot, Event
 
 from .config import Config
 from .constraint import SupportAdapter
@@ -24,6 +24,7 @@ class InfoFetcher(metaclass=ABCMeta):
         self.endpoint: dict[type[Event], Callable[[Bot, Event], Awaitable[dict]]] = {}
         self.wildcard: Optional[Callable[[Bot, Event], Awaitable[dict]]] = None
         self.cache: dict[str, Session] = {}
+        self._timertasks = []
 
     def supply(self, func: TSupplier) -> TSupplier:
         event_type = get_type_hints(func)["event"]
@@ -91,7 +92,9 @@ class InfoFetcher(metaclass=ABCMeta):
             try:
                 sess_id = event.get_session_id()
                 self.cache[sess_id] = sess
-                asyncio.get_running_loop().call_later(conf.uninfo_cache_expire, self.cache.pop, sess_id)
+                asyncio.get_running_loop().call_later(
+                    conf.uninfo_cache_expire, self.cache.pop, sess_id, None
+                )
             except ValueError:
                 pass
         return sess
@@ -107,7 +110,9 @@ class InfoFetcher(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    async def query_member(self, bot: Bot, scene_type: SceneType, parent_scene_id: str, user_id: str) -> Optional[Member]:
+    async def query_member(
+        self, bot: Bot, scene_type: SceneType, parent_scene_id: str, user_id: str
+    ) -> Optional[Member]:
         pass
 
     @abstractmethod

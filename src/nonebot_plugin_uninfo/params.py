@@ -3,7 +3,7 @@ from typing import Annotated, Optional
 from nonebot.adapters import Bot
 from nonebot.params import Depends
 
-from .adapters import alter_get_fetcher, INFO_FETCHER_MAPPING
+from .adapters import INFO_FETCHER_MAPPING, alter_get_fetcher
 from .fetch import InfoFetcher
 from .model import Member, Scene, SceneType, Session, User
 
