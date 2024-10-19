@@ -118,22 +118,22 @@ class InfoFetcher(BaseInfoFetcher):
             }
             return self.extract_scene(data)
 
-    async def query_member(self, bot: Bot, scene_type: SceneType, scene_id: str, user_id: str):
+    async def query_member(self, bot: Bot, scene_type: SceneType, parent_scene_id: str, user_id: str):
         if scene_type >= SceneType.GROUP:
-            member = await bot.get_chat_member(chat_id=scene_id, user_id=int(user_id))
+            member = await bot.get_chat_member(chat_id=parent_scene_id, user_id=int(user_id))
             data = await _supply_userdata(bot, member.user)
             data["role"] = member.status
             return self.extract_member(data, None)
 
-    async def query_users(self, bot: Bot):
+    def query_users(self, bot: Bot):
         raise NotImplementedError
 
-    async def query_scenes(
+    def query_scenes(
         self, bot: Bot, scene_type: Optional[SceneType] = None, *, parent_scene_id: Optional[str] = None
     ):
         raise NotImplementedError
 
-    async def query_members(self, bot: Bot, scene_type: SceneType, scene_id: str):
+    def query_members(self, bot: Bot, scene_type: SceneType, parent_scene_id: str):
         raise NotImplementedError
 
     def supply_self(self, bot: Bot) -> BasicInfo:

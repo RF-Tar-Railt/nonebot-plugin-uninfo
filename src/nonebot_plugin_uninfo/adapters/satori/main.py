@@ -136,12 +136,12 @@ class InfoFetcher(BaseInfoFetcher):
             channel = await bot.channel_get(channel_id=scene_id)
             return self._pack_channel(bot, guild, channel)
 
-    async def query_member(self, bot: Bot, scene_type: SceneType, scene_id: str, user_id: str):
+    async def query_member(self, bot: Bot, scene_type: SceneType, parent_scene_id: str, user_id: str):
         if scene_type in (SceneType.GUILD, SceneType.GROUP):
-            member = await bot.guild_member_get(guild_id=scene_id, user_id=user_id)
+            member = await bot.guild_member_get(guild_id=parent_scene_id, user_id=user_id)
             if member.user:
                 data = {
-                    "scene_id": scene_id,
+                    "scene_id": parent_scene_id,
                     "user_id": member.user.id,
                     "name": member.user.name,
                     "nickname": member.user.nick,
@@ -206,10 +206,10 @@ class InfoFetcher(BaseInfoFetcher):
                         for channel in channels.data:
                             yield self._pack_channel(bot, guild, channel)
 
-    async def query_members(self, bot: Bot, scene_type: SceneType, scene_id: str):
+    async def query_members(self, bot: Bot, scene_type: SceneType, parent_scene_id: str):
         if scene_type not in (SceneType.GUILD, SceneType.GROUP):
             return
-        guild_id = scene_id
+        guild_id = parent_scene_id
         members = await bot.guild_member_list(guild_id=guild_id)
         for member in members.data:
             if not member.user:

@@ -119,10 +119,10 @@ class InfoFetcher(BaseInfoFetcher):
             }
             return self.extract_scene(data)
 
-    async def query_member(self, bot: Bot, scene_type: SceneType, scene_id: str, user_id: str):
+    async def query_member(self, bot: Bot, scene_type: SceneType, parent_scene_id: str, user_id: str):
         if scene_type != SceneType.GROUP:
             return
-        group_id = scene_id
+        group_id = parent_scene_id
 
         member = await bot.get_group_member_info(group_id=int(group_id), user_id=int(user_id))
         data = {
@@ -167,10 +167,10 @@ class InfoFetcher(BaseInfoFetcher):
                 }
                 yield self.extract_scene(data)
 
-    async def query_members(self, bot: Bot, scene_type: SceneType, scene_id: str):
+    async def query_members(self, bot: Bot, scene_type: SceneType, parent_scene_id: str):
         if scene_type != SceneType.GROUP:
             return
-        group_id = scene_id
+        group_id = parent_scene_id
 
         members = await bot.get_group_member_list(group_id=int(group_id))
         for member in members:

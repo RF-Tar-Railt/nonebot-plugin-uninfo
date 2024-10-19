@@ -34,18 +34,18 @@ class InfoFetcher(BaseInfoFetcher):
     ):
         raise NotImplementedError
 
-    async def query_member(self, bot: Bot, scene_type: SceneType, scene_id: str, user_id: str):
+    async def query_member(self, bot: Bot, scene_type: SceneType, parent_scene_id: str, user_id: str):
         raise NotImplementedError
 
-    async def query_users(self, bot: Bot):
+    def query_users(self, bot: Bot):
         raise NotImplementedError
 
-    async def query_scenes(
+    def query_scenes(
         self, bot: Bot, scene_type: Optional[SceneType] = None, *, parent_scene_id: Optional[str] = None
     ):
         raise NotImplementedError
 
-    async def query_members(self, bot: Bot, scene_type: SceneType, scene_id: str):
+    def query_members(self, bot: Bot, scene_type: SceneType, parent_scene_id: str):
         raise NotImplementedError
 
     def supply_self(self, bot: Bot) -> BasicInfo:

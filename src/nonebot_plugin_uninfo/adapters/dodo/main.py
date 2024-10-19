@@ -136,10 +136,8 @@ class InfoFetcher(BaseInfoFetcher):
                 }
             )
 
-    async def query_member(self, bot: Bot, scene_type: SceneType, scene_id: str, user_id: str):
-        if scene_type != SceneType.GUILD:
-            return
-        guild_id = scene_id
+    async def query_member(self, bot: Bot, scene_type: SceneType, parent_scene_id: str, user_id: str):
+        guild_id = parent_scene_id
 
         member = await bot.get_member_info(island_source_id=guild_id, dodo_source_id=user_id)
         user = User(
@@ -155,7 +153,7 @@ class InfoFetcher(BaseInfoFetcher):
             joined_at=member.join_time,
         )
 
-    async def query_users(self, bot: Bot):
+    def query_users(self, bot: Bot):
         raise NotImplementedError
 
     async def query_scenes(
@@ -186,10 +184,8 @@ class InfoFetcher(BaseInfoFetcher):
                         parent=_guild,
                     )
 
-    async def query_members(self, bot: Bot, scene_type: SceneType, scene_id: str):
-        if scene_type != SceneType.GUILD:
-            return
-        guild_id = scene_id
+    async def query_members(self, bot: Bot, scene_type: SceneType, parent_scene_id: str):
+        guild_id = parent_scene_id
 
         members = await bot.get_member_list(island_source_id=guild_id, page_size=100)
         while members.list:

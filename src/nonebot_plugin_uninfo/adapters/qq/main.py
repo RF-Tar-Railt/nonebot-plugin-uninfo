@@ -121,9 +121,9 @@ class InfoFetcher(BaseInfoFetcher):
                 parent=Scene(id=guild.id, type=SceneType.GUILD, name=guild.name, avatar=guild.icon),
             )
 
-    async def query_member(self, bot: Bot, scene_type: SceneType, scene_id: str, user_id: str):
+    async def query_member(self, bot: Bot, scene_type: SceneType, parent_scene_id: str, user_id: str):
         if scene_type == SceneType.GUILD:
-            member = await bot.get_member(guild_id=scene_id, user_id=user_id)
+            member = await bot.get_member(guild_id=parent_scene_id, user_id=user_id)
             return Member(
                 User(
                     id=member.user.id if member.user else user_id,
@@ -131,11 +131,11 @@ class InfoFetcher(BaseInfoFetcher):
                     avatar=member.user.avatar if member.user else None,
                 ),
                 nick=member.nick,
-                role=await _handle_role(bot, scene_id, None, member.roles or []),
+                role=await _handle_role(bot, parent_scene_id, None, member.roles or []),
                 joined_at=member.joined_at,
             )
 
-    async def query_users(self, bot: Bot):
+    def query_users(self, bot: Bot):
         raise NotImplementedError
 
     async def query_scenes(
@@ -165,7 +165,7 @@ class InfoFetcher(BaseInfoFetcher):
                 break
             guilds = await bot.guilds(limit=100, after=guilds[-1].id)
 
-    async def query_members(self, bot: Bot, scene_type: SceneType, scene_id: str):
+    def query_members(self, bot: Bot, scene_type: SceneType, parent_scene_id: str):
         raise NotImplementedError
 
     def supply_self(self, bot: Bot) -> BasicInfo:

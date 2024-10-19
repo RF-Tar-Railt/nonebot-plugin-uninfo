@@ -107,12 +107,19 @@ class InfoFetcher(BaseInfoFetcher):
         )
 
     async def query_user(self, bot: Bot, user_id: str):
-        friend = await bot.get_friend(target=int(user_id))
-        data = {
-            "user_id": str(friend.id),
-            "name": friend.nickname,
-            "nickname": friend.remark,
-        }
+        try:
+            friend = await bot.get_friend(target=int(user_id))
+            data = {
+                "user_id": str(friend.id),
+                "name": friend.nickname,
+                "nickname": friend.remark,
+            }
+        except ActionFailed:
+            usr = await bot.get_user_profile(target=int(user_id))
+            data = {
+                "user_id": user_id,
+                "name": usr.nickname,
+            }
         return self.extract_user(data)
 
     async def query_scene(
@@ -135,9 +142,9 @@ class InfoFetcher(BaseInfoFetcher):
             }
             return self.extract_scene(data)
 
-    async def query_member(self, bot: Bot, scene_type: SceneType, scene_id: str, user_id: str):
+    async def query_member(self, bot: Bot, scene_type: SceneType, parent_scene_id: str, user_id: str):
         if scene_type == SceneType.GROUP:
-            group_id = scene_id
+            group_id = parent_scene_id
             member = await bot.get_member(group=int(group_id), target=int(user_id))
             data = {
                 "group_id": group_id,
@@ -191,11 +198,11 @@ class InfoFetcher(BaseInfoFetcher):
             }
             yield self.extract_scene(data)
 
-    async def query_members(self, bot: Bot, scene_type: SceneType, scene_id: str):
+    async def query_members(self, bot: Bot, scene_type: SceneType, parent_scene_id: str):
         if scene_type != SceneType.GROUP:
             return
 
-        group_id = scene_id
+        group_id = parent_scene_id
         members = await bot.get_member_list(group=int(group_id))
         for member in members:
             try:

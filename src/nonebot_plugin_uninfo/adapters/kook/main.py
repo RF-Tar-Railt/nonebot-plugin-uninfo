@@ -125,10 +125,10 @@ class InfoFetcher(BaseInfoFetcher):
                 }
             )
 
-    async def query_member(self, bot: Bot, scene_type: SceneType, scene_id: str, user_id: str):
+    async def query_member(self, bot: Bot, scene_type: SceneType, parent_scene_id: str, user_id: str):
         if scene_type != SceneType.GUILD:
             return
-        guild_id = scene_id
+        guild_id = parent_scene_id
 
         member = await bot.user_view(guild_id=guild_id, user_id=user_id)
         user = User(
@@ -204,10 +204,10 @@ class InfoFetcher(BaseInfoFetcher):
                 break
             resp = await bot.guild_list(page=(resp.meta.page or 0) + 1)
 
-    async def query_members(self, bot: Bot, scene_type: SceneType, scene_id: str):
+    async def query_members(self, bot: Bot, scene_type: SceneType, parent_scene_id: str):
         if scene_type != SceneType.GUILD:
             return
-        guild_id = scene_id
+        guild_id = parent_scene_id
 
         while True:
             resp = await bot.guild_userList(guild_id=guild_id)

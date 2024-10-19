@@ -113,7 +113,16 @@ class InfoFetcher(BaseInfoFetcher):
         )
 
     async def query_user(self, bot: Bot, user_id: str):
-        raise NotImplementedError
+        try:
+            profile = (await bot.get_friend_profile_card(targets=[int(user_id)])).friends_profile_card[0]
+        except ActionFailed:
+            profile = (await bot.get_stranger_profile_card(targets=[int(user_id)])).strangers_profile_card[0]
+        data = {
+            "user_id": profile.uin,
+            "name": profile.nick,
+            "nickname": profile.remark,
+        }
+        return self.extract_user(data)
 
     async def query_scene(
         self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: Optional[str] = None
@@ -127,9 +136,9 @@ class InfoFetcher(BaseInfoFetcher):
                 }
             )
 
-    async def query_member(self, bot: Bot, scene_type: SceneType, scene_id: str, user_id: str):
+    async def query_member(self, bot: Bot, scene_type: SceneType, parent_scene_id: str, user_id: str):
         if scene_type == SceneType.GROUP:
-            group_id = scene_id
+            group_id = parent_scene_id
 
             member_info = await bot.get_group_member_info(group=group_id, target=user_id)
             group_info = await bot.get_group_info(group=group_id)
@@ -149,7 +158,7 @@ class InfoFetcher(BaseInfoFetcher):
             return self.extract_member(data, None)
 
         elif scene_type == SceneType.GUILD:
-            guild_id = scene_id
+            guild_id = parent_scene_id
 
             member = await bot.get_guild_member(guild_id=guild_id, tiny_id=int(user_id))
             data = {
@@ -221,9 +230,9 @@ class InfoFetcher(BaseInfoFetcher):
                     }
                     yield self.extract_scene(data)
 
-    async def query_members(self, bot: Bot, scene_type: SceneType, scene_id: str):
+    async def query_members(self, bot: Bot, scene_type: SceneType, parent_scene_id: str):
         if scene_type == SceneType.GROUP:
-            group_id = scene_id
+            group_id = parent_scene_id
             group_members = await bot.get_group_member_list(group=group_id)
             group_info = await bot.get_group_info(group=group_id)
             admins = group_info.admins
@@ -241,7 +250,7 @@ class InfoFetcher(BaseInfoFetcher):
                 yield self.extract_member(data, None)
 
         elif scene_type == SceneType.GUILD:
-            guild_id = scene_id
+            guild_id = parent_scene_id
             guild_members = await bot.get_guild_member_list(guild_id=guild_id)
             for member in guild_members.members_info:
                 try:

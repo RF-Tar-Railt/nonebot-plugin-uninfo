@@ -103,7 +103,7 @@ class InfoFetcher(BaseInfoFetcher):
                 }
             )
 
-    async def query_member(self, bot: Bot, scene_type: SceneType, scene_id: str, user_id: str):
+    async def query_member(self, bot: Bot, scene_type: SceneType, parent_scene_id: str, user_id: str):
         raise NotImplementedError
 
     async def query_users(self, bot: Bot):
@@ -185,10 +185,10 @@ class InfoFetcher(BaseInfoFetcher):
                     }
                 )
 
-    async def query_members(self, bot: Bot, scene_type: SceneType, scene_id: str):
+    async def query_members(self, bot: Bot, scene_type: SceneType, parent_scene_id: str):
         if scene_type != SceneType.GROUP:
             return
-        group_id = scene_id
+        group_id = parent_scene_id
 
         resp = await bot.call_api(
             f"im/v1/chats/{group_id}",
