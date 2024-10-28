@@ -235,7 +235,7 @@ async def get_scene_persist_id(basic_info: BasicInfo, scene: Scene) -> int:
         select(SceneModel)
         .where(SceneModel.bot_persist_id == bot_persist_id)
         .where(SceneModel.scene_id == scene.id)
-        .where(SceneModel.scene_id == scene.type)
+        .where(SceneModel.scene_type == scene.type)
     )
     async with get_session() as db_session:
         if scene_model := (await db_session.scalars(statement)).one_or_none():
