@@ -298,9 +298,9 @@ async def get_session_persist_id(session: Session) -> int:
 
     statement = (
         select(SessionModel)
-        .where(SessionModel.bot_persist_id == SessionModel.bot_persist_id)
-        .where(SessionModel.scene_persist_id == SessionModel.scene_persist_id)
-        .where(SessionModel.user_persist_id == SessionModel.user_persist_id)
+        .where(SessionModel.bot_persist_id == bot_persist_id)
+        .where(SessionModel.scene_persist_id == scene_persist_id)
+        .where(SessionModel.user_persist_id == user_persist_id)
     )
     async with get_session() as db_session:
         if session_model := (await db_session.scalars(statement)).one_or_none():
