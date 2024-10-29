@@ -3,6 +3,7 @@ import sys
 from typing import Optional
 
 from nonebot import get_bots, require
+from nonebot.adapters import Bot
 from nonebot.params import Depends
 
 from .model import BasicInfo, Member, Scene, SceneType, Session, User
@@ -32,6 +33,11 @@ class BotModel(Model):
     adapter: Mapped[str] = mapped_column(String(32))
     scope: Mapped[str] = mapped_column(String(32))
 
+    def get_bot(self) -> Optional[Bot]:
+        for bot in list(get_bots().values()):
+            if bot.self_id == self.self_id and bot.adapter.get_name() == self.adapter:
+                return bot
+
 
 class SceneModel(Model):
     __tablename__ = "nonebot_plugin_uninfo_scenemodel"
@@ -51,6 +57,39 @@ class SceneModel(Model):
     scene_type: Mapped[int] = mapped_column(Integer)
     scene_data: Mapped[dict] = mapped_column(JSON)
 
+    async def to_scene(self) -> Scene:
+        parent_scene_model = (
+            await get_scene_model(self.parent_scene_persist_id) if self.parent_scene_persist_id else None
+        )
+        return Scene.load(
+            {
+                **self.scene_data,
+                "id": self.scene_id,
+                "type": self.scene_type,
+                "parent": (
+                    {
+                        **parent_scene_model.scene_data,
+                        "id": parent_scene_model.scene_id,
+                        "type": parent_scene_model.scene_type,
+                    }
+                    if parent_scene_model
+                    else None
+                ),
+            }
+        )
+
+    async def query_scene(self) -> Optional[Scene]:
+        bot_model = await get_bot_model(self.bot_persist_id)
+        if not (bot := bot_model.get_bot()):
+            return None
+        if not (interface := get_interface(bot)):
+            return None
+
+        scene = await self.to_scene()
+        return await interface.get_scene(
+            SceneType(scene.type), scene.id, parent_scene_id=scene.parent.id if scene.parent else None
+        )
+
 
 class UserModel(Model):
     __tablename__ = "nonebot_plugin_uninfo_usermodel"
@@ -66,6 +105,18 @@ class UserModel(Model):
     bot_persist_id: Mapped[int]
     user_id: Mapped[str] = mapped_column(String(64))
     user_data: Mapped[dict] = mapped_column(JSON)
+
+    async def to_user(self) -> User:
+        return User(**{**self.user_data, "id": self.user_id})
+
+    async def query_user(self) -> Optional[User]:
+        bot_model = await get_bot_model(self.bot_persist_id)
+        if not (bot := bot_model.get_bot()):
+            return None
+        if not (interface := get_interface(bot)):
+            return None
+
+        return await interface.get_user(self.user_id)
 
 
 class SessionModel(Model):
@@ -86,38 +137,11 @@ class SessionModel(Model):
     member_data: Mapped[Optional[dict]] = mapped_column(JSON)
 
     async def to_session(self) -> Session:
-        parent_scene_model = None
-        async with get_session() as db_session:
-            bot_model = (await db_session.scalars(select(BotModel).where(BotModel.id == self.bot_persist_id))).one()
-            scene_model = (
-                await db_session.scalars(select(SceneModel).where(SceneModel.id == self.scene_persist_id))
-            ).one()
-            user_model = (await db_session.scalars(select(UserModel).where(UserModel.id == self.user_persist_id))).one()
-
-            if scene_model.parent_scene_persist_id:
-                parent_scene_model = (
-                    await db_session.scalars(
-                        select(SceneModel).where(SceneModel.id == scene_model.parent_scene_persist_id)
-                    )
-                ).one()
-
-        scene = Scene.load(
-            {
-                **scene_model.scene_data,
-                "id": scene_model.scene_id,
-                "type": scene_model.scene_type,
-                "parent": (
-                    {
-                        **parent_scene_model.scene_data,
-                        "id": parent_scene_model.scene_id,
-                        "type": parent_scene_model.scene_type,
-                    }
-                    if parent_scene_model
-                    else None
-                ),
-            }
-        )
-        user = User(**{**user_model.user_data, "id": user_model.user_id})
+        bot_model = await get_bot_model(self.bot_persist_id)
+        scene_model = await get_scene_model(self.scene_persist_id)
+        scene = await scene_model.to_scene()
+        user_model = await get_user_model(self.user_persist_id)
+        user = await user_model.to_user()
         member = Member.load(self.member_data) if self.member_data else None
 
         return Session(
@@ -130,40 +154,22 @@ class SessionModel(Model):
         )
 
     async def query_session(self) -> Optional[Session]:
-        parent_scene_id = None
-        async with get_session() as db_session:
-            bot_model = (await db_session.scalars(select(BotModel).where(BotModel.id == self.bot_persist_id))).one()
-            scene_model = (
-                await db_session.scalars(select(SceneModel).where(SceneModel.id == self.scene_persist_id))
-            ).one()
-            user_model = (await db_session.scalars(select(UserModel).where(UserModel.id == self.user_persist_id))).one()
-
-            if scene_model.parent_scene_persist_id:
-                parent_scene_model = (
-                    await db_session.scalars(
-                        select(SceneModel).where(SceneModel.id == scene_model.parent_scene_persist_id)
-                    )
-                ).one()
-                parent_scene_id = parent_scene_model.scene_id
-
-        bot = None
-        for _bot in list(get_bots().values()):
-            if _bot.self_id == bot_model.self_id and _bot.adapter.get_name() == bot_model.adapter:
-                bot = _bot
-                break
-        if not bot:
+        bot_model = await get_bot_model(self.bot_persist_id)
+        if not (bot := bot_model.get_bot()):
             return None
-
         if not (interface := get_interface(bot)):
             return None
 
+        scene_model = await get_scene_model(self.scene_persist_id)
+        scene = await scene_model.to_scene()
         if not (
             scene := await interface.get_scene(
-                SceneType(scene_model.scene_type), scene_model.scene_id, parent_scene_id=parent_scene_id
+                SceneType(scene.type), scene.id, parent_scene_id=scene.parent.id if scene.parent else None
             )
         ):
             return None
 
+        user_model = await get_user_model(self.user_persist_id)
         if not (user := await interface.get_user(user_model.user_id)):
             return None
 
@@ -326,9 +332,48 @@ async def get_session_persist_id(session: Session) -> int:
                 return (await db_session.scalars(statement)).one().id
 
 
+async def get_bot_model(persist_id: int) -> BotModel:
+    async with get_session() as db_session:
+        return (await db_session.scalars(select(BotModel).where(BotModel.id == persist_id))).one()
+
+
+async def get_scene_model(persist_id: int) -> SceneModel:
+    async with get_session() as db_session:
+        return (await db_session.scalars(select(SceneModel).where(SceneModel.id == persist_id))).one()
+
+
+async def get_user_model(persist_id: int) -> UserModel:
+    async with get_session() as db_session:
+        return (await db_session.scalars(select(UserModel).where(UserModel.id == persist_id))).one()
+
+
 async def get_session_model(persist_id: int) -> SessionModel:
     async with get_session() as db_session:
         return (await db_session.scalars(select(SessionModel).where(SessionModel.id == persist_id))).one()
+
+
+async def get_bot_orm(session: Session = UniSession()):
+    return await get_bot_model(await get_bot_persist_id(session.basic))
+
+
+def BotOrm() -> BotModel:
+    return Depends(get_bot_orm)
+
+
+async def get_scene_orm(session: Session = UniSession()):
+    return await get_scene_model(await get_scene_persist_id(session.basic, session.scene))
+
+
+def SceneOrm() -> SceneModel:
+    return Depends(get_scene_orm)
+
+
+async def get_user_orm(session: Session = UniSession()):
+    return await get_user_model(await get_user_persist_id(session.basic, session.user))
+
+
+def UserOrm() -> UserModel:
+    return Depends(get_user_orm)
 
 
 async def get_session_orm(session: Session = UniSession()):
