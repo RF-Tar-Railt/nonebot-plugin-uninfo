@@ -1,4 +1,5 @@
 import asyncio
+import json
 import sys
 from typing import Optional
 
@@ -237,6 +238,7 @@ async def get_bot_persist_id(basic_info: BasicInfo) -> int:
 async def get_scene_persist_id(basic_info: BasicInfo, scene: Scene) -> int:
     bot_persist_id = await get_bot_persist_id(basic_info)
     parent_scene_persist_id = await get_scene_persist_id(basic_info, scene.parent) if scene.parent else None
+    scene_data = json.loads(scene.dump_json())
 
     statement = (
         select(SceneModel)
@@ -247,7 +249,7 @@ async def get_scene_persist_id(basic_info: BasicInfo, scene: Scene) -> int:
     async with get_session() as db_session:
         if scene_model := (await db_session.scalars(statement)).one_or_none():
             scene_model.parent_scene_persist_id = parent_scene_persist_id
-            scene_model.scene_data = scene.dump()
+            scene_model.scene_data = scene_data
             await db_session.commit()
             await db_session.refresh(scene_model)
             return scene_model.id
@@ -257,7 +259,7 @@ async def get_scene_persist_id(basic_info: BasicInfo, scene: Scene) -> int:
         parent_scene_persist_id=parent_scene_persist_id,
         scene_id=scene.id,
         scene_type=scene.type,
-        scene_data=scene.dump(),
+        scene_data=scene_data,
     )
     async with _get_insert_mutex():
         try:
@@ -273,11 +275,12 @@ async def get_scene_persist_id(basic_info: BasicInfo, scene: Scene) -> int:
 
 async def get_user_persist_id(basic_info: BasicInfo, user: User) -> int:
     bot_persist_id = await get_bot_persist_id(basic_info)
+    user_data = json.loads(user.dump_json())
 
     statement = select(UserModel).where(UserModel.bot_persist_id == bot_persist_id).where(UserModel.user_id == user.id)
     async with get_session() as db_session:
         if user_model := (await db_session.scalars(statement)).one_or_none():
-            user_model.user_data = user.dump()
+            user_model.user_data = user_data
             await db_session.commit()
             await db_session.refresh(user_model)
             return user_model.id
@@ -285,7 +288,7 @@ async def get_user_persist_id(basic_info: BasicInfo, user: User) -> int:
     user_model = UserModel(
         bot_persist_id=bot_persist_id,
         user_id=user.id,
-        user_data=user.dump(),
+        user_data=user_data,
     )
     async with _get_insert_mutex():
         try:
@@ -303,7 +306,7 @@ async def get_session_persist_id(session: Session) -> int:
     bot_persist_id = await get_bot_persist_id(session.basic)
     scene_persist_id = await get_scene_persist_id(session.basic, session.scene)
     user_persist_id = await get_user_persist_id(session.basic, session.user)
-    member_data = session.member.dump() if session.member else None
+    member_data = json.loads(session.member.dump_json()) if session.member else None
 
     statement = (
         select(SessionModel)
