@@ -214,6 +214,7 @@ async def get_bot_persist_id(basic_info: BasicInfo) -> int:
         if bot_model := (await db_session.scalars(statement)).one_or_none():
             bot_model.scope = basic_info["scope"]
             await db_session.commit()
+            await db_session.refresh(bot_model)
             return bot_model.id
 
     bot_model = BotModel(
@@ -248,6 +249,7 @@ async def get_scene_persist_id(basic_info: BasicInfo, scene: Scene) -> int:
             scene_model.parent_scene_persist_id = parent_scene_persist_id
             scene_model.scene_data = scene.dump()
             await db_session.commit()
+            await db_session.refresh(scene_model)
             return scene_model.id
 
     scene_model = SceneModel(
@@ -277,6 +279,7 @@ async def get_user_persist_id(basic_info: BasicInfo, user: User) -> int:
         if user_model := (await db_session.scalars(statement)).one_or_none():
             user_model.user_data = user.dump()
             await db_session.commit()
+            await db_session.refresh(user_model)
             return user_model.id
 
     user_model = UserModel(
@@ -312,6 +315,7 @@ async def get_session_persist_id(session: Session) -> int:
         if session_model := (await db_session.scalars(statement)).one_or_none():
             session_model.member_data = member_data
             await db_session.commit()
+            await db_session.refresh(session_model)
             return session_model.id
 
     session_model = SessionModel(
