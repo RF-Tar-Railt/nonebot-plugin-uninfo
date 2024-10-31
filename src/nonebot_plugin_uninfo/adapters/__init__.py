@@ -18,7 +18,7 @@ for name in _adapters:
         loader = cast(BaseLoader, getattr(module, "Loader")())
         loaders[loader.get_adapter().value] = loader
     except Exception as e:
-        warn(f"Failed to import uniseg adapter {name}: {e}", RuntimeWarning, 5)
+        warn(f"Failed to import uninfo adapter {name}: {e}", RuntimeWarning, 5)
 
 
 INFO_FETCHER_MAPPING: dict[str, InfoFetcher] = {}
@@ -33,7 +33,7 @@ if os.environ.get("PLUGIN_UNINFO_TESTENV"):
         try:
             INFO_FETCHER_MAPPING[adapter] = loaders[adapter].get_fetcher()
         except Exception as e:
-            warn(f"Failed to load uniseg adapter {adapter}: {e}", RuntimeWarning, 5)
+            warn(f"Failed to load uninfo adapter {adapter}: {e}", RuntimeWarning, 5)
 elif not adapters:
     warn(
         "No adapters found, please make sure you have installed at least one adapter.",
@@ -46,10 +46,10 @@ else:
             try:
                 INFO_FETCHER_MAPPING[adapter] = loaders[adapter].get_fetcher()
             except Exception as e:
-                warn(f"Failed to load uniseg adapter {adapter}: {e}", RuntimeWarning, 5)
+                warn(f"Failed to load uninfo adapter {adapter}: {e}", RuntimeWarning, 5)
         else:
             warn(
-                f"Adapter {adapter} is not found in the uniseg.adapters,"
+                f"Adapter {adapter} is not found in the uninfo.adapters,"
                 f"please go to the github repo and create an issue for it.",
                 RuntimeWarning,
                 5,
@@ -62,10 +62,10 @@ def alter_get_fetcher(adapter_name: str):
             INFO_FETCHER_MAPPING[adapter_name] = loaders[adapter_name].get_fetcher()
             return INFO_FETCHER_MAPPING[adapter_name]
         except Exception as e:
-            warn(f"Failed to load uniseg adapter {adapter_name}: {e}", RuntimeWarning, 6)
+            warn(f"Failed to load uninfo adapter {adapter_name}: {e}", RuntimeWarning, 6)
             return None
     warn(
-        f"Adapter {adapter_name} is not found in the uniseg.adapters,"
+        f"Adapter {adapter_name} is not found in the uninfo.adapters,"
         f"please go to the github repo and create an issue for it.",
         RuntimeWarning,
         6,
