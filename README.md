@@ -73,6 +73,15 @@ async def handle(bot: Bot):
         users = await interface.get_users()
 ```
 
+### 使用内建的 `Permission`:
+
+```python
+from nonebot import on_command
+from nonebot_plugin_uninfo import ADMIN
+
+matcher = on_command("inspect", permission=ADMIN())
+```
+
 ## 模型定义
 
 ### `User`
@@ -93,7 +102,7 @@ async def handle(bot: Bot):
 | `type`   | SceneType     | 场景类型  | 可分为 `Private`, `Group`, `Guild` 和 `Channel_XXX` |
 | `name`   | str \| None   | 场景名称  |                                                 |
 | `avatar` | str \| None   | 场景图标  |                                                 |
-| `parent`  | Scene \| None | 父级场景  | 适用于频道的二级群组场景, 或针对临时会话的来源群组                      |
+| `parent` | Scene \| None | 父级场景  | 适用于频道的二级群组场景, 或针对临时会话的来源群组                      |
 
 ### `Member`
 
@@ -157,6 +166,7 @@ async def inspect(session: Uninfo):
 - [x] Kritor
 - [x] Mirai
 - [ ] Tailchat
+- [x] Mail
 
 ## 相关插件
 

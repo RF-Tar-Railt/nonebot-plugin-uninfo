@@ -1,6 +1,6 @@
 [project]
 name = "nonebot-plugin-uninfo"
-version = "0.5.0"
+version = "0.6.0"
 description = "Universal Information Model for Nonebot2"
 authors = [
     {name = "RF-Tar-Railt", email = "rf_tar_railt@qq.com"},
@@ -49,6 +49,7 @@ dev = [
     "nonebot-adapter-tailchat>=0.1.0b12",
     "nonebot-plugin-alconna>=0.52.3",
     "nonebot-plugin-orm[default]>=0.7.6",
+    "nonebot-adapter-mail>=1.0.0a5",
 ]
 [tool.pdm.build]
 includes = ["src/nonebot_plugin_uninfo"]
