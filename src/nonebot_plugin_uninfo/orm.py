@@ -52,8 +52,8 @@ class SceneModel(Model):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    bot_persist_id: Mapped[int]
-    parent_scene_persist_id: Mapped[Optional[int]]
+    bot_persist_id: Mapped[int] = mapped_column(Integer)
+    parent_scene_persist_id: Mapped[Optional[int]] = mapped_column(Integer)
     scene_id: Mapped[str] = mapped_column(String(64))
     scene_type: Mapped[int] = mapped_column(Integer)
     scene_data: Mapped[dict] = mapped_column(JSON)
@@ -103,7 +103,7 @@ class UserModel(Model):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    bot_persist_id: Mapped[int]
+    bot_persist_id: Mapped[int] = mapped_column(Integer)
     user_id: Mapped[str] = mapped_column(String(64))
     user_data: Mapped[dict] = mapped_column(JSON)
 
@@ -132,9 +132,9 @@ class SessionModel(Model):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    bot_persist_id: Mapped[int]
-    scene_persist_id: Mapped[int]
-    user_persist_id: Mapped[int]
+    bot_persist_id: Mapped[int] = mapped_column(Integer)
+    scene_persist_id: Mapped[int] = mapped_column(Integer)
+    user_persist_id: Mapped[int] = mapped_column(Integer)
     member_data: Mapped[Optional[dict]] = mapped_column(JSON)
 
     async def to_session(self) -> Session:

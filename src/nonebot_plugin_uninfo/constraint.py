@@ -22,6 +22,7 @@ class SupportAdapter(StrEnum):
     feishu = "Feishu"
     kritor = "Kritor"
     kook = "Kaiheila"
+    mail = "Mail"
     minecraft = "Minecraft"
     mirai = "Mirai"
     onebot11 = "OneBot V11"
@@ -48,6 +49,7 @@ class SupportScope(StrEnum):
     feishu = "Feishu"
     dodo = "DoDo"
     kook = "Kaiheila"
+    mail = "Mail"
     minecraft = "Minecraft"
     github = "GitHub"
     console = "Console"
@@ -97,6 +99,7 @@ class SupportScope(StrEnum):
             "wecom": SupportScope.wecom,
             "kook": SupportScope.kook,
             "dingtalk": SupportScope.ding,
+            "mail": SupportScope.mail,
         }.get(platform, SupportScope.satori_other)
 
 
@@ -109,6 +112,7 @@ class SupportAdapterModule(str, Enum):
     feishu = "nonebot.adapters.feishu"
     kritor = "nonebot.adapters.kritor"
     kook = "nonebot.adapters.kaiheila"
+    mail = "nonebot.adapters.mail"
     minecraft = "nonebot.adapters.minecraft"
     mirai = "nonebot.adapters.mirai"
     onebot11 = "nonebot.adapters.onebot.v11"

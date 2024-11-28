@@ -92,9 +92,7 @@ class InfoFetcher(metaclass=ABCMeta):
             try:
                 sess_id = event.get_session_id()
                 self.cache[sess_id] = sess
-                asyncio.get_running_loop().call_later(
-                    conf.uninfo_cache_expire, self.cache.pop, sess_id, None
-                )
+                asyncio.get_running_loop().call_later(conf.uninfo_cache_expire, self.cache.pop, sess_id, None)
             except ValueError:
                 pass
         return sess
