@@ -101,7 +101,7 @@ class InfoFetcher(BaseInfoFetcher):
     def _pack_channel(self, bot: Bot, guild: Guild, channel: Channel):
         data = {
             "scene_id": channel.id,
-            "scene_type": SceneType.GROUP if "guild.plain" else TYPE_MAPPING[channel.type],
+            "scene_type": SceneType.GROUP if "guild.plain" in bot._self_info.features else TYPE_MAPPING[channel.type],
             "scene_name": channel.name,
             "parent_id": guild.id,
             "parent_type": SceneType.GROUP if "guild.plain" in bot._self_info.features else SceneType.GUILD,
@@ -278,7 +278,9 @@ async def _(bot: Bot, event: Event):
         base["scene_avatar"] = event.guild.avatar
     elif event.channel:
         base["scene_id"] = event.channel.id
-        base["scene_type"] = SceneType.GROUP if "guild.plain" else TYPE_MAPPING[event.channel.type]
+        base["scene_type"] = (
+            SceneType.GROUP if "guild.plain" in bot._self_info.features else TYPE_MAPPING[event.channel.type]
+        )
         base["scene_name"] = event.channel.name
     if event.member:
         base["member_name"] = event.member.nick
