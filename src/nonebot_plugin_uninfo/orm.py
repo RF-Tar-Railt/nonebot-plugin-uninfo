@@ -209,19 +209,19 @@ async def get_bot_persist_id(basic_info: BasicInfo) -> int:
     statement = (
         select(BotModel)
         .where(BotModel.self_id == basic_info["self_id"])
-        .where(BotModel.adapter == basic_info["adapter"])
+        .where(BotModel.adapter == basic_info["adapter"].value)
     )
     async with get_session() as db_session:
         if bot_model := (await db_session.scalars(statement)).one_or_none():
-            bot_model.scope = basic_info["scope"]
+            bot_model.scope = basic_info["scope"].value
             await db_session.commit()
             await db_session.refresh(bot_model)
             return bot_model.id
 
     bot_model = BotModel(
         self_id=basic_info["self_id"],
-        adapter=basic_info["adapter"],
-        scope=basic_info["scope"],
+        adapter=basic_info["adapter"].value,
+        scope=basic_info["scope"].value,
     )
     async with _get_insert_mutex():
         try:
@@ -244,7 +244,7 @@ async def get_scene_persist_id(basic_info: BasicInfo, scene: Scene) -> int:
         select(SceneModel)
         .where(SceneModel.bot_persist_id == bot_persist_id)
         .where(SceneModel.scene_id == scene.id)
-        .where(SceneModel.scene_type == scene.type)
+        .where(SceneModel.scene_type == scene.type.value)
     )
     async with get_session() as db_session:
         if scene_model := (await db_session.scalars(statement)).one_or_none():
@@ -258,7 +258,7 @@ async def get_scene_persist_id(basic_info: BasicInfo, scene: Scene) -> int:
         bot_persist_id=bot_persist_id,
         parent_scene_persist_id=parent_scene_persist_id,
         scene_id=scene.id,
-        scene_type=scene.type,
+        scene_type=scene.type.value,
         scene_data=scene_data,
     )
     async with _get_insert_mutex():
