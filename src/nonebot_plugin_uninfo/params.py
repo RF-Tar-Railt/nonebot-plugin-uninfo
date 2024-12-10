@@ -38,7 +38,7 @@ class Interface:
 
     async def get_user(self, user_id: str) -> Optional[User]:
         try:
-            return await self.fetcher.query_user(self.bot, user_id)
+            return await self.fetcher.fetch_user(self.bot, user_id)
         except NotImplementedError:
             pass
 
@@ -50,7 +50,7 @@ class Interface:
         self, scene_type: SceneType, scene_id: str, *, parent_scene_id: Optional[str] = None
     ) -> Optional[Scene]:
         try:
-            return await self.fetcher.query_scene(self.bot, scene_type, scene_id, parent_scene_id=parent_scene_id)
+            return await self.fetcher.fetch_scene(self.bot, scene_type, scene_id, parent_scene_id=parent_scene_id)
         except NotImplementedError:
             pass
 
@@ -60,7 +60,7 @@ class Interface:
 
     async def get_member(self, scene_type: SceneType, scene_id: str, user_id: str) -> Optional[Member]:
         try:
-            return await self.fetcher.query_member(self.bot, scene_type, scene_id, user_id)
+            return await self.fetcher.fetch_member(self.bot, scene_type, scene_id, user_id)
         except NotImplementedError:
             pass
 

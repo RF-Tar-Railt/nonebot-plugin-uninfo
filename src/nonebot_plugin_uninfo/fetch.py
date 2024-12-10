@@ -23,8 +23,11 @@ class InfoFetcher(metaclass=ABCMeta):
         self.adapter = adapter
         self.endpoint: dict[type[Event], Callable[[Bot, Event], Awaitable[dict]]] = {}
         self.wildcard: Optional[Callable[[Bot, Event], Awaitable[dict]]] = None
-        self.cache: dict[str, Session] = {}
+        self.session_cache: dict[str, Session] = {}
         self._timertasks = []
+        self._user_cache: dict[str, dict[str, User]] = {}
+        self._scene_cache: dict[str, dict[tuple[int, str, Optional[str]], Scene]] = {}
+        self._member_cache: dict[str, dict[tuple[int, str, str], Member]] = {}
 
     def supply(self, func: TSupplier) -> TSupplier:
         event_type = get_type_hints(func)["event"]
@@ -73,8 +76,8 @@ class InfoFetcher(metaclass=ABCMeta):
         except ValueError:
             pass
         else:
-            if sess_id in self.cache:
-                return self.cache[sess_id]
+            if sess_id in self.session_cache:
+                return self.session_cache[sess_id]
         func = self.endpoint.get(type(event))
         base = self.supply_self(bot)
         try:
@@ -91,8 +94,8 @@ class InfoFetcher(metaclass=ABCMeta):
         if conf.uninfo_cache:
             try:
                 sess_id = event.get_session_id()
-                self.cache[sess_id] = sess
-                asyncio.get_running_loop().call_later(conf.uninfo_cache_expire, self.cache.pop, sess_id, None)
+                self.session_cache[sess_id] = sess
+                asyncio.get_running_loop().call_later(conf.uninfo_cache_expire, self.session_cache.pop, sess_id, None)
             except ValueError:
                 pass
         return sess
@@ -101,17 +104,62 @@ class InfoFetcher(metaclass=ABCMeta):
     async def query_user(self, bot: Bot, user_id: str) -> Optional[User]:
         pass
 
+    async def fetch_user(self, bot: Bot, user_id: str) -> Optional[User]:
+        if bot.self_id not in self._user_cache:
+            self._user_cache[bot.self_id] = {}
+        if user_id in self._user_cache[bot.self_id]:
+            return self._user_cache[bot.self_id][user_id]
+        user = await self.query_user(bot, user_id)
+        if user and conf.uninfo_cache:
+            self._user_cache[bot.self_id][user_id] = user
+            asyncio.get_running_loop().call_later(
+                conf.uninfo_cache_expire, self._user_cache[bot.self_id].pop, user_id, None
+            )
+        return user
+
     @abstractmethod
     async def query_scene(
         self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: Optional[str] = None
     ) -> Optional[Scene]:
         pass
 
+    async def fetch_scene(
+        self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: Optional[str] = None
+    ) -> Optional[Scene]:
+        if bot.self_id not in self._scene_cache:
+            self._scene_cache[bot.self_id] = {}
+        key = (scene_type.value, scene_id, parent_scene_id)
+        if key in self._scene_cache[bot.self_id]:
+            return self._scene_cache[bot.self_id][key]
+        scene = await self.query_scene(bot, scene_type, scene_id, parent_scene_id=parent_scene_id)
+        if scene and conf.uninfo_cache:
+            self._scene_cache[bot.self_id][key] = scene
+            asyncio.get_running_loop().call_later(
+                conf.uninfo_cache_expire, self._scene_cache[bot.self_id].pop, key, None
+            )
+        return scene
+
     @abstractmethod
     async def query_member(
         self, bot: Bot, scene_type: SceneType, parent_scene_id: str, user_id: str
     ) -> Optional[Member]:
         pass
+
+    async def fetch_member(
+        self, bot: Bot, scene_type: SceneType, parent_scene_id: str, user_id: str
+    ) -> Optional[Member]:
+        if bot.self_id not in self._member_cache:
+            self._member_cache[bot.self_id] = {}
+        key = (scene_type.value, parent_scene_id, user_id)
+        if key in self._member_cache[bot.self_id]:
+            return self._member_cache[bot.self_id][key]
+        member = await self.query_member(bot, scene_type, parent_scene_id, user_id)
+        if member and conf.uninfo_cache:
+            self._member_cache[bot.self_id][key] = member
+            asyncio.get_running_loop().call_later(
+                conf.uninfo_cache_expire, self._member_cache[bot.self_id].pop, key, None
+            )
+        return member
 
     @abstractmethod
     def query_users(self, bot: Bot) -> AsyncGenerator[User, None]:

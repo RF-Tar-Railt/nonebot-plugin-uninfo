@@ -1,6 +1,6 @@
-from nonebot import on_command, on_notice
+from nonebot import on_command
 
-from nonebot_plugin_uninfo import Uninfo
+from nonebot_plugin_uninfo import QryItrface, Uninfo
 from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
 
 matcher = on_command("inspect", aliases={"查看"}, priority=1)
@@ -40,17 +40,10 @@ async def inspect(session: Uninfo):
     await matcher.send("\n".join(texts))
 
 
-matcher1 = on_notice()
+matcher1 = on_command("query", aliases={"查询"}, priority=1)
 
 
 @matcher1.handle()
-async def inspect1(session: Uninfo):
-    await matcher.send(
-        f"Self: {session.self_id}\n"
-        f"Adapter: {session.adapter}\n"
-        f"Scope: {session.scope}\n"
-        f"Type: {session.scene.type.name}\n"
-        f"User: {session.user.id}\n"
-        f"Scene: {session.scene.id}\n"
-        f"Member: {session.member.id if session.member else 'None'}"
-    )
+async def query(interface: QryItrface, session: Uninfo):
+    await matcher.send(repr(await interface.get_user(session.user.id)))
+    await matcher.send(repr(await interface.get_user(session.user.id)))
