@@ -3,7 +3,7 @@ from typing import Optional
 
 from nonebot.adapters.kaiheila import Bot
 from nonebot.adapters.kaiheila.api.model import Channel as KookChannel
-from nonebot.adapters.kaiheila.event import Event
+from nonebot.adapters.kaiheila.event import Event, HeartbeatMetaEvent, LifecycleMetaEvent
 
 from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
 from nonebot_plugin_uninfo.fetch import BasicInfo
@@ -234,6 +234,16 @@ class InfoFetcher(BaseInfoFetcher):
 
 
 fetcher = InfoFetcher(SupportAdapter.kook)
+
+
+@fetcher.supply
+async def _(bot: Bot, event: LifecycleMetaEvent):
+    raise NotImplementedError
+
+
+@fetcher.supply
+async def _(bot: Bot, event: HeartbeatMetaEvent):
+    raise NotImplementedError
 
 
 @fetcher.supply_wildcard
