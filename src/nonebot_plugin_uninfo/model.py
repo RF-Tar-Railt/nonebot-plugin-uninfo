@@ -71,10 +71,11 @@ class Scene(ModelMixin):
 
     @classmethod
     def load(cls, data: dict):
-        data["type"] = SceneType(data["type"])
+        _data = data.copy()
+        _data["type"] = SceneType(data["type"])
         if data.get("parent"):
-            data["parent"] = cls.load(data["parent"])
-        return cls(**data)
+            _data["parent"] = cls.load(data["parent"])
+        return cls(**_data)
 
 
 @dataclass
@@ -106,10 +107,11 @@ class MuteInfo(ModelMixin):
 
     @classmethod
     def load(cls, data: dict):
-        data["duration"] = timedelta(seconds=data["duration"])
+        _data = data.copy()
+        _data["duration"] = timedelta(seconds=data["duration"])
         if data.get("start_at"):
-            data["start_at"] = datetime.fromtimestamp(data["start_at"])
-        return cls(**data)
+            _data["start_at"] = datetime.fromtimestamp(data["start_at"])
+        return cls(**_data)
 
     def __post_init__(self):
         if self.duration.total_seconds() < 1:
@@ -134,14 +136,15 @@ class Member(ModelMixin):
 
     @classmethod
     def load(cls, data: dict):
-        data["user"] = User.load(data["user"])
+        _data = data.copy()
+        _data["user"] = User.load(data["user"])
         if data.get("role"):
-            data["role"] = Role.load(data["role"])
+            _data["role"] = Role.load(data["role"])
         if data.get("mute"):
-            data["mute"] = MuteInfo.load(data["mute"])
+            _data["mute"] = MuteInfo.load(data["mute"])
         if data.get("joined_at"):
-            data["joined_at"] = datetime.fromtimestamp(data["joined_at"])
-        return cls(**data)
+            _data["joined_at"] = datetime.fromtimestamp(data["joined_at"])
+        return cls(**_data)
 
 
 @custom_validation
@@ -208,15 +211,16 @@ class Session(ModelMixin):
 
     @classmethod
     def load(cls, data: dict):
-        data["adapter"] = SupportAdapter(data["adapter"])
-        data["scope"] = SupportScope(data["scope"])
-        data["scene"] = Scene.load(data["scene"])
-        data["user"] = User.load(data["user"])
+        _data = data.copy()
+        _data["adapter"] = SupportAdapter(data["adapter"])
+        _data["scope"] = SupportScope(data["scope"])
+        _data["scene"] = Scene.load(data["scene"])
+        _data["user"] = User.load(data["user"])
         if data.get("member"):
-            data["member"] = Member.load(data["member"])
+            _data["member"] = Member.load(data["member"])
         if data.get("operator"):
-            data["operator"] = Member.load(data["operator"])
-        return cls(**data)
+            _data["operator"] = Member.load(data["operator"])
+        return cls(**_data)
 
     @classmethod
     def __get_validators__(cls):

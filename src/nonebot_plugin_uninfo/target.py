@@ -39,15 +39,15 @@ def to_target(
             return Target(
                 scene_id,
                 scene_parent_id,
-                model.scene.is_private,
                 model.scene.is_channel,
+                model.scene.is_private,
                 scope=AlconnaSupportScope(model.scope),
             )
         return Target(
             scene_id,
             scene_parent_id,
-            model.scene.is_private,
             model.scene.is_channel,
+            model.scene.is_private,
             self_id=model.self_id,
             adapter=AlconnaSupportAdapter(model.adapter),
             scope=AlconnaSupportScope(model.scope),
@@ -82,8 +82,8 @@ def to_target(
         return Target(
             scene_id,
             scene_parent_id,
-            model.is_private,
             model.is_channel,
+            model.is_private,
             **basic,  # type: ignore
         )
     else:

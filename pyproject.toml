@@ -1,6 +1,6 @@
 [project]
 name = "nonebot-plugin-uninfo"
-version = "0.6.3"
+version = "0.6.4"
 description = "Universal Information Model for Nonebot2"
 authors = [
     {name = "RF-Tar-Railt", email = "rf_tar_railt@qq.com"},
@@ -94,7 +94,7 @@ format = { composite = ["isort ./src/ example.py","black ./src/ example.py","ruf
 adapters = [
     { name = "OneBot V11", module_name = "nonebot.adapters.onebot.v11" },
     # { name = "Satori", module_name = "nonebot.adapters.satori" },
-    { name = "QQ", module_name = "nonebot.adapters.qq" }
+    # { name = "QQ", module_name = "nonebot.adapters.qq" }
 ]
 plugins = ["example"]
 plugin_dirs = []
