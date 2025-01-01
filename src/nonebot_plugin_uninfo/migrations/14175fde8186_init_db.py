@@ -30,7 +30,7 @@ def upgrade(name: str = "") -> None:
         sa.Column("adapter", sa.String(length=32), nullable=False),
         sa.Column("scope", sa.String(length=32), nullable=False),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_nonebot_plugin_uninfo_botmodel")),
-        sa.UniqueConstraint("self_id", "adapter", name="unique_bot"),
+        sa.UniqueConstraint("self_id", "adapter", name="nonebot_plugin_uninfo_unique_bot"),
         info={"bind_key": "nonebot_plugin_uninfo"},
     )
     op.create_table(
@@ -42,7 +42,7 @@ def upgrade(name: str = "") -> None:
         sa.Column("scene_type", sa.Integer(), nullable=False),
         sa.Column("scene_data", sa.JSON(), nullable=False),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_nonebot_plugin_uninfo_scenemodel")),
-        sa.UniqueConstraint("bot_persist_id", "scene_id", "scene_type", name="unique_scene"),
+        sa.UniqueConstraint("bot_persist_id", "scene_id", "scene_type", name="nonebot_plugin_uninfo_unique_scene"),
         info={"bind_key": "nonebot_plugin_uninfo"},
     )
     op.create_table(
@@ -52,7 +52,7 @@ def upgrade(name: str = "") -> None:
         sa.Column("user_id", sa.String(length=64), nullable=False),
         sa.Column("user_data", sa.JSON(), nullable=False),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_nonebot_plugin_uninfo_usermodel")),
-        sa.UniqueConstraint("bot_persist_id", "user_id", name="unique_user"),
+        sa.UniqueConstraint("bot_persist_id", "user_id", name="nonebot_plugin_uninfo_unique_user"),
         info={"bind_key": "nonebot_plugin_uninfo"},
     )
     op.create_table(
@@ -63,7 +63,9 @@ def upgrade(name: str = "") -> None:
         sa.Column("user_persist_id", sa.Integer(), nullable=False),
         sa.Column("member_data", sa.JSON(), nullable=True),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_nonebot_plugin_uninfo_sessionmodel")),
-        sa.UniqueConstraint("bot_persist_id", "scene_persist_id", "user_persist_id", name="unique_session"),
+        sa.UniqueConstraint(
+            "bot_persist_id", "scene_persist_id", "user_persist_id", name="nonebot_plugin_uninfo_unique_session"
+        ),
         info={"bind_key": "nonebot_plugin_uninfo"},
     )
     # ### end Alembic commands ###
