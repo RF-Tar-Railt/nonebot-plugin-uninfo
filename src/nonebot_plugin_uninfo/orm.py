@@ -25,7 +25,7 @@ class BotModel(Model):
         UniqueConstraint(
             "self_id",
             "adapter",
-            name="unique_bot",
+            name="nonebot_plugin_uninfo_unique_bot",
         ),
     )
 
@@ -47,7 +47,7 @@ class SceneModel(Model):
             "bot_persist_id",
             "scene_id",
             "scene_type",
-            name="unique_scene",
+            name="nonebot_plugin_uninfo_unique_scene",
         ),
     )
 
@@ -98,7 +98,7 @@ class UserModel(Model):
         UniqueConstraint(
             "bot_persist_id",
             "user_id",
-            name="unique_user",
+            name="nonebot_plugin_uninfo_unique_user",
         ),
     )
 
@@ -127,7 +127,7 @@ class SessionModel(Model):
             "bot_persist_id",
             "scene_persist_id",
             "user_persist_id",
-            name="unique_session",
+            name="nonebot_plugin_uninfo_unique_session",
         ),
     )
 
