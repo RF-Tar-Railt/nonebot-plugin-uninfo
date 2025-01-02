@@ -2,7 +2,7 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 from enum import IntEnum
 import json
-from typing import Optional, TypedDict, Union
+from typing import Optional, TypedDict, Union, Any
 from typing_extensions import Required, Self
 
 from nonebot.compat import custom_validation
@@ -38,11 +38,15 @@ class ModelMixin:
     def load(cls, data: dict):
         return cls(**data)  # type: ignore  # noqa
 
-    def dump(self):
-        return asdict(self)  # type: ignore  # noqa
+    def dump(self) -> dict[str, Any]:
+        return json.loads(self.dump_json())
 
     def dump_json(self):
-        return json.dumps(self.dump(), cls=DatetimeJsonEncoder)
+        return json.dumps(
+            asdict(self),  # type: ignore  # noqa
+            ensure_ascii=False,
+            cls=DatetimeJsonEncoder
+        )
 
 
 @dataclass
