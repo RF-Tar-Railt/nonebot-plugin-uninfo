@@ -15,7 +15,10 @@ TB = TypeVar("TB", bound=Bot)
 Supplier = Callable[[TB, TE], Awaitable[dict]]
 TSupplier = TypeVar("TSupplier", bound=Supplier)
 
-conf = get_plugin_config(Config)
+try:
+    conf = get_plugin_config(Config)
+except ValueError:
+    conf = Config()
 
 
 class InfoFetcher(metaclass=ABCMeta):

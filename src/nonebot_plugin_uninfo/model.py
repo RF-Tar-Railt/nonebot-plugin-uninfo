@@ -2,10 +2,11 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 from enum import IntEnum
 import json
-from typing import Optional, TypedDict, Union, Any
+from typing import Any, Optional, TypedDict, Union
 from typing_extensions import Required, Self
 
 from nonebot.compat import custom_validation
+from pydantic.dataclasses import rebuild_dataclass
 
 from .constraint import SupportAdapter, SupportScope
 from .util import DatetimeJsonEncoder
@@ -42,11 +43,7 @@ class ModelMixin:
         return json.loads(self.dump_json())
 
     def dump_json(self):
-        return json.dumps(
-            asdict(self),  # type: ignore  # noqa
-            ensure_ascii=False,
-            cls=DatetimeJsonEncoder
-        )
+        return json.dumps(asdict(self), ensure_ascii=False, cls=DatetimeJsonEncoder)  # type: ignore  # noqa
 
 
 @dataclass
@@ -234,4 +231,12 @@ class Session(ModelMixin):
     def _validate(cls, value) -> Self:
         if isinstance(value, cls):
             return value
+        if isinstance(value, dict):
+            return cls.load(value)
         raise ValueError(f"Type {type(value)} can not be converted to {cls}")
+
+#     __pydantic_complete__ = False
+#
+# origin_init = Session.__init__
+# rebuild_dataclass(Session)
+# Session.__init__ = origin_init  # type: ignore
