@@ -5,8 +5,7 @@ import json
 from typing import Any, Optional, TypedDict, Union
 from typing_extensions import Required, Self
 
-from nonebot.compat import custom_validation
-from pydantic.dataclasses import rebuild_dataclass
+from nonebot.compat import PYDANTIC_V2, custom_validation, DEFAULT_CONFIG
 
 from .constraint import SupportAdapter, SupportScope
 from .util import DatetimeJsonEncoder
@@ -148,7 +147,7 @@ class Member(ModelMixin):
         return cls(**_data)
 
 
-@custom_validation
+#@custom_validation
 @dataclass
 class Session(ModelMixin):
     self_id: str
@@ -235,8 +234,11 @@ class Session(ModelMixin):
             return cls.load(value)
         raise ValueError(f"Type {type(value)} can not be converted to {cls}")
 
-#     __pydantic_complete__ = False
-#
-# origin_init = Session.__init__
-# rebuild_dataclass(Session)
-# Session.__init__ = origin_init  # type: ignore
+
+if PYDANTIC_V2:
+    from pydantic._internal._dataclasses import complete_dataclass
+    from pydantic._internal._config import ConfigWrapper
+
+    origin_init = Session.__init__
+    complete_dataclass(Session, ConfigWrapper(DEFAULT_CONFIG, check=False))
+    Session.__init__ = origin_init  # type: ignore
