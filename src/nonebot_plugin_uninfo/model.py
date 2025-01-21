@@ -2,10 +2,10 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 from enum import IntEnum
 import json
-from typing import Any, Optional, TypedDict, Union
+from typing import Any, Optional, TypedDict, TypeVar, Union
 from typing_extensions import Required, Self
 
-from nonebot.compat import PYDANTIC_V2, custom_validation, DEFAULT_CONFIG
+from nonebot.compat import DEFAULT_CONFIG, PYDANTIC_V2
 
 from .constraint import SupportAdapter, SupportScope
 from .util import DatetimeJsonEncoder
@@ -32,6 +32,35 @@ class SceneType(IntEnum):
     """子频道语音场景"""
 
 
+C = TypeVar("C")
+
+
+def _apply_schema(cls: type[C]) -> type[C]:
+    if PYDANTIC_V2:
+        from pydantic._internal._config import ConfigWrapper
+        from pydantic._internal._dataclasses import complete_dataclass
+
+        origin_init = cls.__init__
+        origin_post_init = getattr(cls, "__post_init__", None)
+        complete_dataclass(
+            cls,
+            ConfigWrapper(DEFAULT_CONFIG, check=False),
+        )
+        cls.__init__ = origin_init  # type: ignore
+        if origin_post_init:
+            cls.__post_init__ = origin_post_init  # type: ignore
+    else:
+        from pydantic.dataclasses import _add_pydantic_validation_attributes
+
+        origin_init = cls.__init__
+        origin_post_init = getattr(cls, "__post_init__", None)
+        _add_pydantic_validation_attributes(cls, DEFAULT_CONFIG)
+        cls.__init__ = origin_init  # type: ignore
+        if origin_post_init:
+            cls.__post_init__ = origin_post_init  # type: ignore
+    return cls
+
+
 class ModelMixin:
 
     @classmethod
@@ -45,6 +74,7 @@ class ModelMixin:
         return json.dumps(asdict(self), ensure_ascii=False, cls=DatetimeJsonEncoder)  # type: ignore  # noqa
 
 
+@_apply_schema
 @dataclass
 class Scene(ModelMixin):
     id: str
@@ -78,6 +108,7 @@ class Scene(ModelMixin):
         return cls(**_data)
 
 
+@_apply_schema
 @dataclass
 class User(ModelMixin):
     id: str
@@ -89,6 +120,7 @@ class User(ModelMixin):
     gender: str = "unknown"
 
 
+@_apply_schema
 @dataclass
 class Role(ModelMixin):
     id: str
@@ -96,6 +128,7 @@ class Role(ModelMixin):
     name: Optional[str] = None
 
 
+@_apply_schema
 @dataclass
 class MuteInfo(ModelMixin):
     muted: bool
@@ -120,6 +153,7 @@ class MuteInfo(ModelMixin):
             self.muted = False
 
 
+@_apply_schema
 @dataclass
 class Member(ModelMixin):
     user: User
@@ -147,7 +181,7 @@ class Member(ModelMixin):
         return cls(**_data)
 
 
-#@custom_validation
+@_apply_schema
 @dataclass
 class Session(ModelMixin):
     self_id: str
@@ -233,12 +267,3 @@ class Session(ModelMixin):
         if isinstance(value, dict):
             return cls.load(value)
         raise ValueError(f"Type {type(value)} can not be converted to {cls}")
-
-
-if PYDANTIC_V2:
-    from pydantic._internal._dataclasses import complete_dataclass
-    from pydantic._internal._config import ConfigWrapper
-
-    origin_init = Session.__init__
-    complete_dataclass(Session, ConfigWrapper(DEFAULT_CONFIG, check=False))
-    Session.__init__ = origin_init  # type: ignore
