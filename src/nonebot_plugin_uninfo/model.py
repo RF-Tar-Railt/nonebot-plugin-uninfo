@@ -77,11 +77,18 @@ class ModelMixin:
 @_apply_schema
 @dataclass
 class Scene(ModelMixin):
+    """对话场景，如群组、频道、私聊等"""
+
     id: str
+    """场景id"""
     type: SceneType
+    """场景类型"""
     name: Optional[str] = None
+    """场景名称"""
     avatar: Optional[str] = None
+    """场景头像"""
     parent: Optional["Scene"] = None
+    """父级场景"""
 
     @property
     def is_private(self) -> bool:
@@ -111,26 +118,38 @@ class Scene(ModelMixin):
 @_apply_schema
 @dataclass
 class User(ModelMixin):
+    """用户信息"""
+
     id: str
+    """用户id"""
     name: Optional[str] = None
     """用户名"""
     nick: Optional[str] = None
     """用户昵称"""
     avatar: Optional[str] = None
+    """用户头像"""
     gender: str = "unknown"
+    """用户性别"""
 
 
 @_apply_schema
 @dataclass
 class Role(ModelMixin):
+    """群员角色信息"""
+
     id: str
+    """角色id"""
     level: int = 0
+    """角色等级/权限"""
     name: Optional[str] = None
+    """角色名称"""
 
 
 @_apply_schema
 @dataclass
 class MuteInfo(ModelMixin):
+    """禁言信息"""
+
     muted: bool
     """是否被禁言"""
     duration: timedelta
@@ -156,13 +175,18 @@ class MuteInfo(ModelMixin):
 @_apply_schema
 @dataclass
 class Member(ModelMixin):
+    """群员信息"""
+
     user: User
+    """群员用户信息"""
     nick: Optional[str] = None
     """群员昵称"""
     role: Optional[Role] = None
     """群员角色"""
     mute: Optional[MuteInfo] = None
+    """群员禁言信息"""
     joined_at: Optional[datetime] = None
+    """加入时间"""
 
     @property
     def id(self) -> str:
@@ -184,6 +208,8 @@ class Member(ModelMixin):
 @_apply_schema
 @dataclass
 class Session(ModelMixin):
+    """对话信息"""
+
     self_id: str
     """机器人id"""
     adapter: Union[str, SupportAdapter]
@@ -193,9 +219,11 @@ class Session(ModelMixin):
     scene: Scene
     """场景信息"""
     user: User
+    """用户信息"""
     member: Optional[Member] = None
+    """群员信息"""
     operator: Optional[Member] = None
-
+    """操作者信息"""
     platform: Union[str, set[str], None] = None
     """平台名称，仅当目标适配器存在多个平台时使用"""
 
