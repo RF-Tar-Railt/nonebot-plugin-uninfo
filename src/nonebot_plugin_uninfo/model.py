@@ -54,7 +54,7 @@ def _apply_schema(cls: type[C]) -> type[C]:
 
         origin_init = cls.__init__
         origin_post_init = getattr(cls, "__post_init__", None)
-        _add_pydantic_validation_attributes(cls, DEFAULT_CONFIG)
+        _add_pydantic_validation_attributes(cls, DEFAULT_CONFIG, False, cls.__doc__ or "")
         cls.__init__ = origin_init  # type: ignore
         if origin_post_init:
             cls.__post_init__ = origin_post_init  # type: ignore
