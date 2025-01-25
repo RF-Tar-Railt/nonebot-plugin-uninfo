@@ -58,6 +58,7 @@ def _apply_schema(cls: type[C]) -> type[C]:
         cls.__init__ = origin_init  # type: ignore
         if origin_post_init:
             cls.__post_init__ = origin_post_init  # type: ignore
+        cls.__pydantic_model__.update_forward_refs()
     return cls
 
 
