@@ -61,6 +61,9 @@ class InfoFetcher(metaclass=ABCMeta):
     def supply_self(self, bot) -> BasicInfo:
         pass
 
+    def get_session_id(self, event: Event) -> str:
+        return event.get_session_id()
+
     def parse(self, data: dict) -> Session:
         user = self.extract_user(data)
         return Session(
@@ -75,7 +78,7 @@ class InfoFetcher(metaclass=ABCMeta):
 
     async def fetch(self, bot: Bot, event: Event) -> Session:
         try:
-            sess_id = event.get_session_id()
+            sess_id = self.get_session_id(event)
         except ValueError:
             pass
         else:
@@ -96,7 +99,7 @@ class InfoFetcher(metaclass=ABCMeta):
             raise NotImplementedError(f"Event {type(event)} not supported yet") from None
         if conf.uninfo_cache:
             try:
-                sess_id = event.get_session_id()
+                sess_id = self.get_session_id(event)
                 self.session_cache[sess_id] = sess
                 asyncio.get_running_loop().call_later(conf.uninfo_cache_expire, self.session_cache.pop, sess_id, None)
             except ValueError:

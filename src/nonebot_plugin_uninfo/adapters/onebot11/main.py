@@ -19,6 +19,7 @@ from nonebot.adapters.onebot.v11.event import (
     PrivateMessageEvent,
 )
 from nonebot.exception import ActionFailed
+from nonebot.internal.adapter import Event
 
 from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
 from nonebot_plugin_uninfo.fetch import BasicInfo
@@ -33,6 +34,11 @@ ROLES = {
 
 
 class InfoFetcher(BaseInfoFetcher):
+    def get_session_id(self, event: Event) -> str:
+        if isinstance(event, PokeNotifyEvent):
+            return f"{event.get_session_id()}_{event.target_id}"
+        return event.get_session_id()
+
     def extract_user(self, data):
         return User(
             id=data["user_id"],
@@ -305,6 +311,12 @@ async def _(
             "name": friend_info.get("nickname"),
             "nickname": friend_info.get("remark"),
             "gender": friend_info.get("sex", "unknown"),
+            "operator": {
+                "user_id": str(event.user_id),
+                "name": friend_info.get("nickname"),
+                "nickname": friend_info.get("remark"),
+                "gender": friend_info.get("sex", "unknown"),
+            },
         }
     try:
         group_info = await bot.get_group_info(group_id=event.group_id)

@@ -451,6 +451,11 @@ async def _(bot: Bot, event: NudgeEvent):
             "user_id": str(event.supplicant),
             "name": name,
             "nickname": nickname,
+            "operator": {
+                "user_id": str(event.target),
+                "name": name,
+                "nickname": nickname,
+            },
         }
     if scene_type == "stranger":
         try:
@@ -461,6 +466,10 @@ async def _(bot: Bot, event: NudgeEvent):
         return {
             "user_id": str(event.supplicant),
             "name": name,
+            "operator": {
+                "user_id": str(event.target),
+                "name": name,
+            },
         }
     if isinstance(event.subject, Group):
         try:
