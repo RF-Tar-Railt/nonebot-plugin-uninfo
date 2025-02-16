@@ -35,6 +35,17 @@ CHANNEL_TYPE = {
 
 
 class InfoFetcher(BaseInfoFetcher):
+    def get_session_id(self, event: Event) -> str:
+        if isinstance(event, MessageDeleteEvent):
+            return f"{event.get_session_id()}_{event.op_user.id}"
+        if isinstance(event, GuildEvent):
+            return f"guild_{event.id}_{event.op_user_id}"
+        if isinstance(event, GuildMemberEvent):
+            return f"{event.get_session_id()}_{event.op_user_id}"
+        if isinstance(event, ChannelEvent):
+            return f"channel_{event.guild_id}_{event.id}_{event.op_user_id}"
+        return event.get_session_id()
+
     def extract_user(self, data):
         return User(
             id=data["user_id"],
@@ -277,7 +288,7 @@ async def _(bot: Bot, event: GroupAtMessageCreateEvent):
 @fetcher.supply_wildcard
 async def _(bot: Bot, event: Event):
     if isinstance(event, GuildMessageEvent):
-        base = {
+        base: dict = {
             "user_id": event.author.id,
             "name": event.author.username or "",
             "nickname": "",

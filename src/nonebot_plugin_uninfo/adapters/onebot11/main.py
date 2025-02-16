@@ -37,6 +37,16 @@ class InfoFetcher(BaseInfoFetcher):
     def get_session_id(self, event: Event) -> str:
         if isinstance(event, PokeNotifyEvent):
             return f"{event.get_session_id()}_{event.target_id}"
+        if isinstance(
+            event,
+            (
+                GroupDecreaseNoticeEvent,
+                GroupIncreaseNoticeEvent,
+                GroupRecallNoticeEvent,
+                GroupBanNoticeEvent,
+            ),
+        ):
+            return f"{event.get_session_id()}_{event.operator_id}"
         return event.get_session_id()
 
     def extract_user(self, data):

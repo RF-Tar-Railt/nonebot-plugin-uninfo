@@ -38,6 +38,7 @@ from nonebot.adapters.mirai.event import (
 )
 from nonebot.adapters.mirai.model.relationship import Group, MemberPerm
 from nonebot.exception import ActionFailed
+from nonebot.internal.adapter import Event
 
 from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
 from nonebot_plugin_uninfo.fetch import BasicInfo
@@ -52,6 +53,36 @@ ROLES = {
 
 
 class InfoFetcher(BaseInfoFetcher):
+    def get_session_id(self, event: Event) -> str:
+        if isinstance(event, (BotJoinGroupEvent, MemberJoinEvent)) and event.inviter:
+            return f"{event.get_session_id()}_{event.inviter.id}"
+        if (
+            isinstance(
+                event,
+                (
+                    BotMuteEvent,
+                    BotUnmuteEvent,
+                    BotLeaveEventKick,
+                    BotLeaveEventDisband,
+                    GroupNameChangeEvent,
+                    GroupEntranceAnnouncementChangeEvent,
+                    GroupMuteAllEvent,
+                    GroupAllowMemberInviteEvent,
+                    MemberLeaveEventKick,
+                    MemberCardChangeEvent,
+                    MemberMuteEvent,
+                    MemberUnmuteEvent,
+                ),
+            )
+            and event.operator
+        ):
+            return f"{event.get_session_id()}_{event.operator.id}"
+        if isinstance(event, GroupRecallEvent):
+            return f"{event.get_session_id()}_{event.operator}"
+        if isinstance(event, NudgeEvent):
+            return f"{event.get_session_id()}_{event.supplicant}"
+        return event.get_session_id()
+
     def extract_user(self, data):
         return User(
             id=data["user_id"],
@@ -452,7 +483,7 @@ async def _(bot: Bot, event: NudgeEvent):
             "name": name,
             "nickname": nickname,
             "operator": {
-                "user_id": str(event.target),
+                "user_id": str(event.supplicant),
                 "name": name,
                 "nickname": nickname,
             },
@@ -467,7 +498,7 @@ async def _(bot: Bot, event: NudgeEvent):
             "user_id": str(event.supplicant),
             "name": name,
             "operator": {
-                "user_id": str(event.target),
+                "user_id": str(event.supplicant),
                 "name": name,
             },
         }

@@ -21,6 +21,7 @@ from nonebot.adapters.onebot.v12.event import (
     PrivateMessageEvent,
 )
 from nonebot.exception import ActionFailed
+from nonebot.internal.adapter import Event
 
 from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
 from nonebot_plugin_uninfo.fetch import BasicInfo
@@ -29,6 +30,11 @@ from nonebot_plugin_uninfo.model import Member, MuteInfo, Scene, SceneType, User
 
 
 class InfoFetcher(BaseInfoFetcher):
+    def get_session_id(self, event: Event) -> str:
+        if isinstance(event, (GuildMemberDecreaseEvent, GuildMemberIncreaseEvent)):
+            return f"{event.get_session_id()}_{event.operator_id}"
+        return event.get_session_id()
+
     def extract_user(self, data):
         return User(
             id=data["user_id"],

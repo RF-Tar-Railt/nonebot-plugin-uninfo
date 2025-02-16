@@ -248,13 +248,21 @@ async def _(bot: Bot, event: HeartbeatMetaEvent):
 
 @fetcher.supply_wildcard
 async def _(bot: Bot, event: Event):
-    user = event.extra.author or await bot.user_view(user_id=event.user_id)
-    base = {
-        "user_id": user.id_,
-        "name": user.username,
-        "nickname": user.nickname,
-        "avatar": user.avatar,
-    }
+    if event.user_id == "SYSTEM":
+        base = {
+            "user_id": bot.self_id,
+            "name": bot.self_name,
+            "nickname": bot.self_name,
+            "avatar": "",
+        }
+    else:
+        user = event.extra.author or await bot.user_view(user_id=event.user_id)
+        base = {
+            "user_id": user.id_,
+            "name": user.username,
+            "nickname": user.nickname,
+            "avatar": user.avatar,
+        }
     if event.channel_type == "PERSON":
         return base
     if event.type_ != 255:
