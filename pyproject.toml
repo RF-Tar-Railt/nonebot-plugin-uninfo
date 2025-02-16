@@ -1,6 +1,6 @@
 [project]
 name = "nonebot-plugin-uninfo"
-version = "0.6.8"
+version = "0.6.9"
 description = "Universal Information Model for Nonebot2"
 authors = [
     {name = "RF-Tar-Railt", email = "rf_tar_railt@qq.com"},
