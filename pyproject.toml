@@ -1,6 +1,6 @@
 [project]
 name = "nonebot-plugin-uninfo"
-version = "0.6.9"
+version = "0.6.10"
 description = "Universal Information Model for Nonebot2"
 authors = [
     {name = "RF-Tar-Railt", email = "rf_tar_railt@qq.com"},
@@ -29,7 +29,6 @@ dev = [
     "ruff>=0.6.8",
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.31.0",
-    "pydantic>=2.9.2",
     "nonebot2[httpx,websockets]>=2.3.3",
     "nonebot-adapter-console>=0.6.0",
     "nonebot-adapter-ding>=2.0.0a16",

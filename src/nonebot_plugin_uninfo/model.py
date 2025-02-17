@@ -37,15 +37,16 @@ C = TypeVar("C")
 
 def _apply_schema(cls: type[C]) -> type[C]:
     if PYDANTIC_V2:
+        from pydantic import VERSION
         from pydantic._internal._config import ConfigWrapper
         from pydantic._internal._dataclasses import complete_dataclass
 
         origin_init = cls.__init__
         origin_post_init = getattr(cls, "__post_init__", None)
-        complete_dataclass(
-            cls,
-            ConfigWrapper(DEFAULT_CONFIG, check=False),
-        )
+        if int(VERSION.split(".")[1]) >= 10:
+            complete_dataclass(cls, ConfigWrapper(DEFAULT_CONFIG, check=False))  # type: ignore
+        else:
+            complete_dataclass(cls, ConfigWrapper(DEFAULT_CONFIG, check=False), types_namespace=None)  # type: ignore
         cls.__init__ = origin_init  # type: ignore
         if origin_post_init:
             cls.__post_init__ = origin_post_init  # type: ignore
