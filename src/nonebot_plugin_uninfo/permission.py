@@ -4,12 +4,16 @@ from nonebot.adapters import Bot, Event
 from nonebot.permission import Permission
 
 from .params import get_session
+from .constraint import SupportAdapter
+from .model import SceneType
 
 
 async def _private(bot: Bot, event: Event) -> bool:
     sess = await get_session(bot, event)
     if not sess:
         return False
+    if sess.adapter == SupportAdapter.qq and sess.scene.type == SceneType.CHANNEL_TEXT:
+        return sess.scene.parent.name is None
     return sess.scene.is_private
 
 
