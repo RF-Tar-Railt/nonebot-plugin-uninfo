@@ -253,7 +253,7 @@ async def _(bot: Bot, event: Union[GroupMessageEvent, PrivateMessageEvent]):
     user = {}
     try:
         resp = await bot.call_api(
-            f"contact/v3/users/{event.event.sender.sender_id}",
+            f"contact/v3/users/{event.event.sender.sender_id.open_id}",
             method="GET",
             query={"user_id_type": "open_id"},
         )
@@ -265,7 +265,7 @@ async def _(bot: Bot, event: Union[GroupMessageEvent, PrivateMessageEvent]):
     except ActionFailed:
         pass
     base = {
-        "user_id": event.event.sender.sender_id,
+        "user_id": event.event.sender.sender_id.open_id,
         "name": "",
         **user,
     }
@@ -284,7 +284,7 @@ async def _(bot: Bot, event: Union[GroupMessageEvent, PrivateMessageEvent]):
                 method="GET",
                 query={"user_id_type": resp["data"]["owner_id_type"]},
             )
-            if event.event.sender.sender_id == resp1["data"]["open_id"]:
+            if event.event.sender.sender_id.open_id == resp1["data"]["open_id"]:
                 base["role"] = Role("OWNER", 100, "owner")
         except ActionFailed:
             pass
