@@ -246,7 +246,7 @@ TYPE_MAPPING = {
 @fetcher.supply_wildcard
 async def _(bot: Bot, event: Event):
     if not event.user:
-        user_id = event.self_id
+        user_id = bot.get_self_id()
         name = ""
         nickname = ""
     else:

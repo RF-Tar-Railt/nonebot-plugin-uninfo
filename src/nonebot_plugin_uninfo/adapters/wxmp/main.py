@@ -1,7 +1,7 @@
 from typing import Optional
 
-from nonebot.adapters.mail import Bot
-from nonebot.adapters.mail.event import MessageEvent
+from nonebot.adapters.wxmp import Bot
+from nonebot.adapters.wxmp.event import Event
 
 from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
 from nonebot_plugin_uninfo.fetch import BasicInfo
@@ -13,14 +13,12 @@ class InfoFetcher(BaseInfoFetcher):
     def extract_user(self, data):
         return User(
             id=data["user_id"],
-            name=data["name"],
         )
 
     def extract_scene(self, data):
         return Scene(
             id=data["user_id"],
             type=SceneType.PRIVATE,
-            name=data["name"],
         )
 
     def extract_member(self, data, user: Optional[User]):
@@ -49,17 +47,16 @@ class InfoFetcher(BaseInfoFetcher):
     def supply_self(self, bot: Bot) -> BasicInfo:
         return {
             "self_id": str(bot.self_id),
-            "adapter": SupportAdapter.mail,
-            "scope": SupportScope.mail,
+            "adapter": SupportAdapter.wxmp,
+            "scope": SupportScope.wechat_oap,
         }
 
 
-fetcher = InfoFetcher(SupportAdapter.mail)
+fetcher = InfoFetcher(SupportAdapter.wxmp)
 
 
 @fetcher.supply
-async def _(bot: Bot, event: MessageEvent):
+async def _(bot: Bot, event: Event):
     return {
-        "user_id": event.sender.id,
-        "name": event.sender.name or event.sender.id,
+        "user_id": event.user_id,
     }

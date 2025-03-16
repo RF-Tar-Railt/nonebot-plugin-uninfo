@@ -31,6 +31,7 @@ class SupportAdapter(StrEnum):
     satori = "Satori"
     telegram = "Telegram"
     # tail_chat = "Tailchat"  # TODO: Add tailchat support
+    wxmp = "WXMP"
 
     nonebug = "fake"
 
@@ -121,3 +122,4 @@ class SupportAdapterModule(str, Enum):
     satori = "nonebot.adapters.satori"
     telegram = "nonebot.adapters.telegram"
     # tail_chat = "nonebot_adapter_tailchat"  # TODO: Add tailchat support
+    wxmp = "nonebot.adapters.wxmp"
