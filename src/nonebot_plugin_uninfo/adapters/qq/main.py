@@ -4,6 +4,8 @@ from nonebot.adapters.qq import Bot
 from nonebot.adapters.qq.event import (
     C2CMessageCreateEvent,
     ChannelEvent,
+    DirectMessageCreateEvent,
+    DirectMessageDeleteEvent,
     Event,
     GroupAtMessageCreateEvent,
     GuildEvent,
@@ -28,6 +30,7 @@ ROLES = {
 
 
 CHANNEL_TYPE = {
+    -1: SceneType.PRIVATE,
     0: SceneType.CHANNEL_TEXT,
     2: SceneType.CHANNEL_VOICE,
     4: SceneType.CHANNEL_CATEGORY,
@@ -308,7 +311,7 @@ async def _(bot: Bot, event: Event):
             base["guild_avatar"] = guild.icon
             channel = await bot.get_channel(channel_id=event.channel_id)
             base["channel_name"] = channel.name
-            base["channel_type"] = channel.type
+            base["channel_type"] = -1 if isinstance(event, DirectMessageCreateEvent) else channel.type
         except ActionFailed:
             pass
         return base
@@ -336,7 +339,7 @@ async def _(bot: Bot, event: Event):
             base["guild_avatar"] = guild.icon
             channel = await bot.get_channel(channel_id=message_event.channel_id)
             base["channel_name"] = channel.name
-            base["channel_type"] = channel.type
+            base["channel_type"] = -1 if isinstance(event, DirectMessageDeleteEvent) else channel.type
         except ActionFailed:
             pass
         base["operator"] = {
