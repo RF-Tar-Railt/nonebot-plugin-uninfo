@@ -284,7 +284,7 @@ async def _(bot: Bot, event: Union[GroupMessageEvent, PrivateMessageEvent]):
                 method="GET",
                 query={"user_id_type": resp["data"]["owner_id_type"]},
             )
-            if event.event.sender.sender_id.open_id == resp1["data"]["open_id"]:
+            if event.event.sender.sender_id.open_id == resp1["data"]["user"]["open_id"]:
                 base["role"] = Role("OWNER", 100, "owner")
         except ActionFailed:
             pass

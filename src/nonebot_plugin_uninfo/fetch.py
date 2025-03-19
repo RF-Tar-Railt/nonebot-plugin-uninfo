@@ -84,7 +84,11 @@ class InfoFetcher(metaclass=ABCMeta):
         else:
             if sess_id in self.session_cache:
                 return self.session_cache[sess_id]
-        func = self.endpoint.get(type(event))
+        func = None
+        for t in event.__class__.__mro__[:-1]:
+            func = self.endpoint.get(t)
+            if func:
+                break
         base = self.supply_self(bot)
         try:
             if func:

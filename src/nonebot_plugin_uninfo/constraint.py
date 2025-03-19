@@ -20,6 +20,7 @@ class SupportAdapter(StrEnum):
     discord = "Discord"
     dodo = "DoDo"
     feishu = "Feishu"
+    gewechat = "gewechat"
     kritor = "Kritor"
     kook = "Kaiheila"
     mail = "Mail"
@@ -96,6 +97,7 @@ class SupportScope(StrEnum):
             "telegram": SupportScope.telegram,
             "discord": SupportScope.discord,
             "feishu": SupportScope.feishu,
+            "gewechat": SupportScope.wechat,
             "wechat-official": SupportScope.wechat_oap,
             "wecom": SupportScope.wecom,
             "kook": SupportScope.kook,
@@ -111,6 +113,7 @@ class SupportAdapterModule(str, Enum):
     discord = "nonebot.adapters.discord"
     dodo = "nonebot.adapters.dodo"
     feishu = "nonebot.adapters.feishu"
+    gewechat = "nonebot.adapters.gewechat"
     kritor = "nonebot.adapters.kritor"
     kook = "nonebot.adapters.kaiheila"
     mail = "nonebot.adapters.mail"
