@@ -167,6 +167,9 @@ async def inspect(session: Uninfo):
 - [x] Mirai
 - [ ] Tailchat
 - [x] Mail
+- [x] WXMP
+- [ ] heybox
+- [x] Gewechat
 
 ## 相关插件
 
