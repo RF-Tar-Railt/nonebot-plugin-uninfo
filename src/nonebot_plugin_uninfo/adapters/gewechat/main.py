@@ -31,7 +31,7 @@ GENDER = {
 class InfoFetcher(BaseInfoFetcher):
     def get_session_id(self, event: Event) -> str:
         if isinstance(event, PokeEvent):
-            return f"poke_{event.FromUserName}_{event.ToUserName}"
+            return f"poke_{event.FromUserName}_{event.UserId}_{event.ToUserName}"
         if isinstance(event, NoticeEvent):
             return f"{event.FromUserName}_{event.ToUserName or ''}"
         return event.get_session_id()
@@ -42,7 +42,7 @@ class InfoFetcher(BaseInfoFetcher):
             name=data["name"],
             nick=data.get("remark"),
             avatar=data.get("avatar"),
-            gender=GENDER.get(data.get("sex", -1), "unknown"),
+            gender=GENDER.get(data.get("gender", -1), "unknown"),
         )
 
     def extract_scene(self, data):
@@ -76,7 +76,7 @@ class InfoFetcher(BaseInfoFetcher):
                 name=data["name"],
                 nick=data["remark"],
                 avatar=data.get("avatar"),
-                gender=GENDER.get(data.get("sex", -1), "unknown"),
+                gender=GENDER.get(data.get("gender", -1), "unknown"),
             ),
             nick=data["member_name"],
             role=Role(*ROLES[_role], name=_role),
@@ -216,8 +216,64 @@ async def _(bot: Bot, event: MessageEvent):
 
 
 @fetcher.supply
+async def _(bot: Bot, event: PokeEvent):
+    if event.FromUserName == event.UserId:  # private
+        user_info = (await bot.getBreifInfo([event.UserId])).data[0]
+        return {
+            "user_id": user_info.userName,
+            "name": user_info.nickName,
+            "remark": user_info.remark,
+            "gender": user_info.sex,
+            "avatar": user_info.bigHeadImgUrl,
+            "operator": {
+                "user_id": user_info.userName,
+                "name": user_info.nickName,
+                "remark": user_info.remark,
+                "gender": user_info.sex,
+                "avatar": user_info.bigHeadImgUrl,
+            }
+        }
+    user_info, operator_info = (await bot.getBreifInfo([event.ToUserName, event.UserId])).data
+    base = {
+        "user_id": user_info.userName,
+        "name": user_info.nickName,
+        "remark": user_info.remark,
+        "gender": user_info.sex,
+        "avatar": user_info.bigHeadImgUrl,
+    }
+    room_info = (await bot.getChatroomInfo(event.FromUserName)).data
+    base |= {
+        "room_id": room_info.chatroomId,
+        "room_name": room_info.nickName,
+        "room_avatar": str(room_info.smallHeadImgUrl),
+    }
+    member_info, member_operator_info = (await bot.getChatroomMemberDetail(event.FromUserName, [event.ToUserName, event.UserId])).data
+    base |= {
+        "member_name": member_info.nickName,
+        "operator": {
+            "user_id": operator_info.userName,
+            "name": operator_info.nickName,
+            "remark": operator_info.remark,
+            "gender": operator_info.sex,
+            "avatar": operator_info.bigHeadImgUrl,
+            "member_name": member_operator_info.nickName,
+        }
+    }
+    admins = [d["string"] for d in (await bot.getChatroomMemberList(event.FromUserName)).data.adminWxid or []]
+    if room_info.chatRoomOwner == user_info.userName:
+        base["role"] = "owner"
+    elif user_info.userName in admins:
+        base["role"] = "admin"
+    if room_info.chatRoomOwner == operator_info.userName:
+        base["operator"]["role"] = "owner"
+    elif operator_info.userName in admins:
+        base["operator"]["role"] = "admin"
+    return base
+
+
+@fetcher.supply
 async def _(bot: Bot, event: NoticeEvent):
-    if isinstance(event, (PokeEvent, RevokeEvent)):  # TODO: ensure for chatroom id
+    if isinstance(event, RevokeEvent):  # TODO: ensure for chatroom id
         raise NotImplementedError
     if isinstance(event, (FriendInfoChangeEvent, FriendRemovedEvent)):
         user_info = (await bot.getBreifInfo([event.FromUserName])).data[0]
