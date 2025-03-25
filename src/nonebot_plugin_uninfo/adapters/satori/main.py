@@ -145,6 +145,7 @@ class InfoFetcher(BaseInfoFetcher):
                     "user_id": member.user.id,
                     "name": member.user.name,
                     "nickname": member.user.nick,
+                    "avatar": member.avatar or member.user.avatar,
                     "member_name": member.nick,
                     "joined_at": member.joined_at,
                 }
@@ -219,6 +220,7 @@ class InfoFetcher(BaseInfoFetcher):
                 "user_id": member.user.id,
                 "name": member.user.name,
                 "nickname": member.user.nick,
+                "avatar": member.avatar or member.user.avatar,
                 "member_name": member.nick,
                 "joined_at": member.joined_at,
             }
