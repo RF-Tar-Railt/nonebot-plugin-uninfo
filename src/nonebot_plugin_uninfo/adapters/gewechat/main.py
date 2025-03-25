@@ -231,7 +231,7 @@ async def _(bot: Bot, event: PokeEvent):
                 "remark": user_info.remark,
                 "gender": user_info.sex,
                 "avatar": user_info.bigHeadImgUrl,
-            }
+            },
         }
     user_info, operator_info = (await bot.getBreifInfo([event.ToUserName, event.UserId])).data
     base = {
@@ -247,7 +247,9 @@ async def _(bot: Bot, event: PokeEvent):
         "room_name": room_info.nickName,
         "room_avatar": str(room_info.smallHeadImgUrl),
     }
-    member_info, member_operator_info = (await bot.getChatroomMemberDetail(event.FromUserName, [event.ToUserName, event.UserId])).data
+    member_info, member_operator_info = (
+        await bot.getChatroomMemberDetail(event.FromUserName, [event.ToUserName, event.UserId])
+    ).data
     base |= {
         "member_name": member_info.nickName,
         "operator": {
@@ -257,7 +259,7 @@ async def _(bot: Bot, event: PokeEvent):
             "gender": operator_info.sex,
             "avatar": operator_info.bigHeadImgUrl,
             "member_name": member_operator_info.nickName,
-        }
+        },
     }
     admins = [d["string"] for d in (await bot.getChatroomMemberList(event.FromUserName)).data.adminWxid or []]
     if room_info.chatRoomOwner == user_info.userName:
