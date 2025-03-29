@@ -5,7 +5,7 @@ import json
 from typing import Any, Optional, TypedDict, TypeVar, Union
 from typing_extensions import Required, Self
 
-from nonebot.compat import DEFAULT_CONFIG, PYDANTIC_V2
+from nonebot.compat import DEFAULT_CONFIG, PYDANTIC_V2, custom_validation
 
 from .constraint import SupportAdapter, SupportScope
 from .util import DatetimeJsonEncoder
@@ -208,6 +208,7 @@ class Member(ModelMixin):
 
 
 @_apply_schema
+@custom_validation
 @dataclass
 class Session(ModelMixin):
     """对话信息"""
