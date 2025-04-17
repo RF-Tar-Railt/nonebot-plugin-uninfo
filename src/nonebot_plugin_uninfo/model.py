@@ -3,9 +3,9 @@ from datetime import datetime, timedelta
 from enum import IntEnum
 import json
 from typing import Any, Optional, TypedDict, TypeVar, Union
-from typing_extensions import Required, Self
+from typing_extensions import Required
 
-from nonebot.compat import DEFAULT_CONFIG, PYDANTIC_V2, custom_validation
+from nonebot.compat import DEFAULT_CONFIG, PYDANTIC_V2
 
 from .constraint import SupportAdapter, SupportScope
 from .util import DatetimeJsonEncoder
@@ -208,7 +208,6 @@ class Member(ModelMixin):
 
 
 @_apply_schema
-@custom_validation
 @dataclass
 class Session(ModelMixin):
     """对话信息"""
@@ -286,15 +285,3 @@ class Session(ModelMixin):
         if data.get("operator"):
             _data["operator"] = Member.load(data["operator"])
         return cls(**_data)
-
-    @classmethod
-    def __get_validators__(cls):
-        yield cls._validate
-
-    @classmethod
-    def _validate(cls, value) -> Self:
-        if isinstance(value, cls):
-            return value
-        if isinstance(value, dict):
-            return cls.load(value)
-        raise ValueError(f"Type {type(value)} can not be converted to {cls}")
