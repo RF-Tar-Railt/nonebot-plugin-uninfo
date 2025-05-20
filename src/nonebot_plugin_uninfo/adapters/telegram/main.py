@@ -2,6 +2,7 @@ from typing import Optional, Union
 
 from nonebot.adapters.telegram import Bot
 from nonebot.adapters.telegram.event import (
+    CallbackQueryEvent,
     ForumTopicEditedMessageEvent,
     ForumTopicMessageEvent,
     GroupEditedMessageEvent,
@@ -238,4 +239,17 @@ async def _(bot: Bot, event: NewChatMemberEvent):
         base["role"] = member.status
     except ActionFailed:
         pass
+    return base
+
+@fetcher.supply
+async def _(bot: Bot, event: CallbackQueryEvent):
+    base = await _supply_userdata(bot, event.from_)
+    if event.message:
+        base["chat_id"] = str(event.message.chat.id)
+        base["chat_name"] = event.message.chat.title
+        try:
+            member = await bot.get_chat_member(chat_id=event.message.chat.id, user_id=event.from_.id)
+            base["role"] = member.status
+        except ActionFailed:
+            pass
     return base
