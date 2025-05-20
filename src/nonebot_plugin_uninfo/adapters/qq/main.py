@@ -116,7 +116,11 @@ class InfoFetcher(BaseInfoFetcher):
         return None
 
     async def query_user(self, bot: Bot, user_id: str):
-        raise NotImplementedError
+        return User(
+            id=user_id,
+            name="",
+            avatar=f"https://q.qlogo.cn/qqapp/{bot.bot_info.id}/{user_id}/100",
+        )
 
     async def query_scene(
         self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: Optional[str] = None
@@ -136,7 +140,7 @@ class InfoFetcher(BaseInfoFetcher):
             )
 
     async def query_member(self, bot: Bot, scene_type: SceneType, parent_scene_id: str, user_id: str):
-        if scene_type == SceneType.GUILD:
+        if scene_type >= SceneType.GUILD:
             member = await bot.get_member(guild_id=parent_scene_id, user_id=user_id)
             return Member(
                 User(
@@ -147,6 +151,15 @@ class InfoFetcher(BaseInfoFetcher):
                 nick=member.nick,
                 role=await _handle_role(bot, parent_scene_id, None, member.roles or []),
                 joined_at=member.joined_at,
+            )
+        if scene_type == SceneType.GROUP:
+            return Member(
+                User(
+                    id=user_id,
+                    name="",
+                    avatar=f"https://q.qlogo.cn/qqapp/{bot.bot_info.id}/{user_id}/100",
+                ),
+                nick="",
             )
 
     def query_users(self, bot: Bot):
