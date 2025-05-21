@@ -64,13 +64,13 @@ async def handle1(session: Uninfo):
 ### 拉取用户/群组/频道列表：
 
 ```python
-from nonebot_plugin_uninfo import get_interface
+from nonebot_plugin_uninfo import SceneType, QryItrface
 
 @matcher.handle()
-async def handle(bot: Bot):
-    interface = await get_interface(bot)
-    if interface:
-        users = await interface.get_users()
+async def handle(interface: QryItrface):
+    users = await interface.get_users()
+    groups = await interface.get_scenes(SceneType.GROUP)
+    members = await interface.get_members(groups[0].type, groups[0].id)
 ```
 
 ### 使用内建的 `Permission`:

@@ -231,12 +231,14 @@ class Session(ModelMixin):
 
     @property
     def id(self) -> str:
+        """会话唯一标识符"""
         if self.scene.is_private:
             return self.scene_path
         return f"{self.scene_path}_{self.user.id}"
 
     @property
     def scene_path(self) -> str:
+        """会话的场景路径，类似于 `event.get_session_id()`"""
         if self.scene.is_private:
             if self.scene.parent:
                 return f"{self.scene.parent.id}_{self.user.id}"
@@ -249,6 +251,7 @@ class Session(ModelMixin):
 
     @property
     def guild(self) -> Optional[Scene]:
+        """父级频道"""
         if self.scene.is_guild:
             return self.scene
         elif self.scene.is_channel:
@@ -256,16 +259,19 @@ class Session(ModelMixin):
 
     @property
     def channel(self) -> Optional[Scene]:
+        """子频道"""
         if self.scene.is_channel:
             return self.scene
 
     @property
     def group(self) -> Optional[Scene]:
+        """群组"""
         if self.scene.is_group:
             return self.scene
 
     @property
     def friend(self) -> Optional[Scene]:
+        """好友"""
         if self.scene.is_private:
             return self.scene
 

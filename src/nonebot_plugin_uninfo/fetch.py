@@ -118,7 +118,11 @@ class InfoFetcher(metaclass=ABCMeta):
                     conf.uninfo_cache_expire, self._scene_cache[bot.self_id].pop, key2, None
                 )
                 if sess.member:
-                    key3 = (sess.scene.type.value, sess.scene.parent.id if sess.scene.parent else sess.scene.id, sess.member.id)
+                    key3 = (
+                        sess.scene.type.value,
+                        sess.scene.parent.id if sess.scene.parent else sess.scene.id,
+                        sess.member.id,
+                    )
                     self._member_cache[bot.self_id][key3] = sess.member
                     asyncio.get_running_loop().call_later(
                         conf.uninfo_cache_expire, self._member_cache[bot.self_id].pop, key3, None
