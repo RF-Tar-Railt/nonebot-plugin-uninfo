@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Optional, Union
 
 from nonebot.adapters.telegram import Bot
@@ -178,7 +179,11 @@ async def _supply_userdata(bot: Bot, user: Union[str, TelegramUser]):
         if profile_photos.total_count > 0:
             file = await bot.get_file(file_id=profile_photos.photos[0][-1].file_id)
             if file.file_path:
-                res["avatar"] = f"https://api.telegram.org/file/bot{bot.bot_config.token}/{file.file_path}"
+                if Path(file.file_path).exists():
+                    # 本地搭建的 Telegram Bot API 会传给你本地的文件路径
+                    res["avatar"] = Path(file.file_path).as_uri()
+                else:
+                    res["avatar"] = f"https://api.telegram.org/file/bot{bot.bot_config.token}/{file.file_path}"
     except ActionFailed:
         pass
     return res
@@ -240,6 +245,7 @@ async def _(bot: Bot, event: NewChatMemberEvent):
     except ActionFailed:
         pass
     return base
+
 
 @fetcher.supply
 async def _(bot: Bot, event: CallbackQueryEvent):
