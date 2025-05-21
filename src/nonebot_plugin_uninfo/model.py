@@ -72,8 +72,8 @@ class ModelMixin:
     def dump(self) -> dict[str, Any]:
         return json.loads(self.dump_json())
 
-    def dump_json(self):
-        return json.dumps(asdict(self), ensure_ascii=False, cls=DatetimeJsonEncoder)  # type: ignore  # noqa
+    def dump_json(self, indent: Optional[int] = None) -> str:
+        return json.dumps(asdict(self), ensure_ascii=False, indent=indent, cls=DatetimeJsonEncoder)  # type: ignore  # noqa
 
 
 @_apply_schema
