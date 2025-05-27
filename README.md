@@ -157,6 +157,7 @@ async def inspect(session: Uninfo):
 - [x] OneBot v12
 - [x] Console
 - [x] Kook (Kaiheila)
+- [ ] Github
 - [x] Telegram
 - [x] Feishu
 - [x] Discord
@@ -170,6 +171,7 @@ async def inspect(session: Uninfo):
 - [x] WXMP
 - [ ] heybox
 - [x] Gewechat
+- [x] Milky
 
 ## 相关插件
 
