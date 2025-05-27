@@ -26,6 +26,7 @@ class SupportAdapter(StrEnum):
     mail = "Mail"
     minecraft = "Minecraft"
     mirai = "Mirai"
+    milky = "Milky"
     onebot11 = "OneBot V11"
     onebot12 = "OneBot V12"
     qq = "QQ"
@@ -92,6 +93,8 @@ class SupportScope(StrEnum):
             "nekobox": SupportScope.qq_client,
             "lagrange": SupportScope.qq_client,
             "lagrange.python": SupportScope.qq_client,
+            "milky": SupportScope.qq_client,
+            "lagrange.milky": SupportScope.qq_client,
             "qq": SupportScope.qq_api,
             "qqguild": SupportScope.qq_api,
             "telegram": SupportScope.telegram,
@@ -119,6 +122,7 @@ class SupportAdapterModule(str, Enum):
     mail = "nonebot.adapters.mail"
     minecraft = "nonebot.adapters.minecraft"
     mirai = "nonebot.adapters.mirai"
+    milky = "nonebot.adapters.milky"
     onebot11 = "nonebot.adapters.onebot.v11"
     onebot12 = "nonebot.adapters.onebot.v12"
     qq = "nonebot.adapters.qq"
