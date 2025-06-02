@@ -3,20 +3,19 @@ from typing import Optional, Union
 
 from nonebot.adapters.milky import Bot
 from nonebot.adapters.milky.event import (
+    FriendMessageEvent,
     FriendNudgeEvent,
     FriendRequestEvent,
     GroupInvitationEvent,
-    GroupInviteRequestEvent,
-    GroupJoinRequestEvent,
     GroupMemberDecreaseEvent,
     GroupMemberIncreaseEvent,
+    GroupMessageEvent,
     GroupMuteEvent,
     GroupNudgeEvent,
+    GroupRequestEvent,
     MessageEvent,
-    GroupMessageEvent,
-    FriendMessageEvent,
-    TempMessageEvent,
     MessageRecallEvent,
+    TempMessageEvent,
 )
 from nonebot.adapters.milky.event import Event as MilkyEvent
 from nonebot.exception import ActionFailed
@@ -330,29 +329,63 @@ async def _(bot: Bot, event: GroupNudgeEvent):
 @fetcher.supply
 async def _(bot: Bot, event: FriendRequestEvent):
     try:
-        info = await bot.get_friend_info(user_id=event.data.operator_id)
+        info = await bot.get_friend_info(user_id=event.data.initiator_id)
         return {
-            "user_id": str(event.data.operator_id),
+            "user_id": str(event.data.initiator_id),
             "name": info.nickname,
             "nickname": info.remark,
             "gender": info.sex,
         }
     except ActionFailed:
-        return {"user_id": str(event.data.operator_id)}
+        return {"user_id": str(event.data.initiator_id)}
 
 
 @fetcher.supply
-async def _(bot: Bot, event: Union[GroupJoinRequestEvent, GroupInvitationEvent, GroupInviteRequestEvent]):
+async def _(bot: Bot, event: GroupRequestEvent):
     try:
-        user = await bot.get_friend_info(user_id=event.data.operator_id)
-        base = {
-            "user_id": str(event.data.operator_id),
+        user = await bot.get_friend_info(user_id=event.data.initiator_id)
+        base: dict = {
+            "user_id": str(event.data.initiator_id),
             "name": user.nickname,
             "nickname": user.remark,
             "gender": user.sex,
         }
     except ActionFailed:
-        base = {"user_id": str(event.data.operator_id)}
+        base = {"user_id": str(event.data.initiator_id)}
+    try:
+        group = await bot.get_group_info(group_id=event.data.group_id)
+        base |= {
+            "group_id": str(event.data.group_id),
+            "group_name": group.name,
+        }
+    except ActionFailed:
+        base["group_id"] = str(event.data.group_id)
+    if event.data.operator_id:
+        try:
+            operator = await bot.get_group_member_info(group_id=event.data.group_id, user_id=event.data.operator_id)
+            base["operator"] = {
+                "user_id": str(event.data.operator_id),
+                "name": operator.nickname,
+                "nickname": operator.card,
+                "gender": operator.sex,
+            }
+        except ActionFailed:
+            base["operator"] = {"user_id": str(event.data.operator_id)}
+    return base
+
+
+@fetcher.supply
+async def _(bot: Bot, event: GroupInvitationEvent):
+    try:
+        user = await bot.get_friend_info(user_id=event.data.initiator_id)
+        base = {
+            "user_id": str(event.data.initiator_id),
+            "name": user.nickname,
+            "nickname": user.remark,
+            "gender": user.sex,
+        }
+    except ActionFailed:
+        base = {"user_id": str(event.data.initiator_id)}
     try:
         group = await bot.get_group_info(group_id=event.data.group_id)
         base |= {
