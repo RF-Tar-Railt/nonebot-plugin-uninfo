@@ -116,7 +116,7 @@ class SupportAdapterModule(str, Enum):
     discord = "nonebot.adapters.discord"
     dodo = "nonebot.adapters.dodo"
     feishu = "nonebot.adapters.feishu"
-    gewechat = "nonebot.adapters.gewechat"
+    # gewechat = "nonebot.adapters.gewechat"
     kritor = "nonebot.adapters.kritor"
     kook = "nonebot.adapters.kaiheila"
     mail = "nonebot.adapters.mail"
