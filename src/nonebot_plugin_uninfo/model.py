@@ -76,9 +76,19 @@ class ModelMixin:
         return json.dumps(asdict(self), ensure_ascii=False, indent=indent, cls=DatetimeJsonEncoder)  # type: ignore  # noqa
 
 
+class HashableMixin:
+    id: str
+
+    def __hash__(self) -> int:
+        return hash(self.id)
+
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, type(self)) and self.id == other.id
+
+
 @_apply_schema
 @dataclass
-class Scene(ModelMixin):
+class Scene(ModelMixin, HashableMixin):
     """对话场景，如群组、频道、私聊等"""
 
     id: str
@@ -119,7 +129,7 @@ class Scene(ModelMixin):
 
 @_apply_schema
 @dataclass
-class User(ModelMixin):
+class User(ModelMixin, HashableMixin):
     """用户信息"""
 
     id: str
@@ -209,7 +219,7 @@ class Member(ModelMixin):
 
 @_apply_schema
 @dataclass
-class Session(ModelMixin):
+class Session(ModelMixin, HashableMixin):
     """对话信息"""
 
     self_id: str
