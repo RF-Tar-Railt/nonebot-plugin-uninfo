@@ -94,7 +94,7 @@ class InfoFetcher(BaseInfoFetcher):
         )
 
     async def query_user(self, bot: Bot, user_id: str) -> User:
-        info = await bot.get_friend_info(user_id=int(user_id))
+        info = await bot.get_user_profile(user_id=int(user_id))
         data = {
             "user_id": user_id,
             "name": info.nickname,
@@ -329,7 +329,7 @@ async def _(bot: Bot, event: GroupNudgeEvent):
 @fetcher.supply
 async def _(bot: Bot, event: FriendRequestEvent):
     try:
-        info = await bot.get_friend_info(user_id=event.data.initiator_id)
+        info = await bot.get_user_profile(user_id=event.data.initiator_id)
         return {
             "user_id": str(event.data.initiator_id),
             "name": info.nickname,
@@ -343,7 +343,7 @@ async def _(bot: Bot, event: FriendRequestEvent):
 @fetcher.supply
 async def _(bot: Bot, event: GroupRequestEvent):
     try:
-        user = await bot.get_friend_info(user_id=event.data.initiator_id)
+        user = await bot.get_user_profile(user_id=event.data.initiator_id)
         base: dict = {
             "user_id": str(event.data.initiator_id),
             "name": user.nickname,
@@ -377,7 +377,7 @@ async def _(bot: Bot, event: GroupRequestEvent):
 @fetcher.supply
 async def _(bot: Bot, event: GroupInvitationEvent):
     try:
-        user = await bot.get_friend_info(user_id=event.data.initiator_id)
+        user = await bot.get_user_profile(user_id=event.data.initiator_id)
         base = {
             "user_id": str(event.data.initiator_id),
             "name": user.nickname,
@@ -410,7 +410,17 @@ async def _(bot: Bot, event: Union[GroupMemberIncreaseEvent, GroupMemberDecrease
             "join_time": user.join_time,
         }
     except ActionFailed:
-        base = {"user_id": str(event.data.user_id)}
+        try:
+            user = await bot.get_user_profile(user_id=event.data.user_id)
+            base = {
+                "user_id": str(event.data.user_id),
+                "name": user.nickname,
+                "nickname": user.remark,
+                "gender": user.sex,
+                "role": "member",
+            }
+        except ActionFailed:
+            base = {"user_id": str(event.data.user_id)}
     try:
         group = await bot.get_group_info(group_id=event.data.group_id)
         base |= {
