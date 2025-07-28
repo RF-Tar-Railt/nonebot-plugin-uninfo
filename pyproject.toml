@@ -92,6 +92,7 @@ format = { composite = ["isort ./src/ example.py","black ./src/ example.py","ruf
 
 [tool.nonebot]
 adapters = [
+    # { name = "Console", module_name = "nonebot.adapters.console" },
     { name = "OneBot V11", module_name = "nonebot.adapters.onebot.v11" },
     # { name = "Satori", module_name = "nonebot.adapters.satori" },
     # { name = "QQ", module_name = "nonebot.adapters.qq" }
