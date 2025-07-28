@@ -3,23 +3,19 @@ from typing import Optional
 from nonebot.adapters.efchat import Bot
 from nonebot.adapters.efchat.event import (
     ChannelMessageEvent,
-    WhisperMessageEvent,
     InviteEvent,
+    WhisperMessageEvent,
 )
 
 from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
 from nonebot_plugin_uninfo.fetch import BasicInfo
 from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
-from nonebot_plugin_uninfo.model import Scene, SceneType, User, Member
+from nonebot_plugin_uninfo.model import Member, Scene, SceneType, User
 
 
 class InfoFetcher(BaseInfoFetcher):
     def extract_user(self, data):
-        return User(
-            id=data["user_id"],
-            name=data["user_id"],
-            avatar=data.get("head")
-        )
+        return User(id=data["user_id"], name=data["user_id"], avatar=data.get("head"))
 
     def extract_scene(self, data):
         if "channel_id" in data:
@@ -28,12 +24,7 @@ class InfoFetcher(BaseInfoFetcher):
                 type=SceneType.GROUP,
                 name=data["channel_id"],
             )
-        return Scene(
-            id=data['user_id'],
-            type=SceneType.PRIVATE,
-            name=data["user_id"],
-            avatar=data.get("head", None)
-        )
+        return Scene(id=data["user_id"], type=SceneType.PRIVATE, name=data["user_id"], avatar=data.get("head", None))
 
     def extract_member(self, data, user: Optional[User]):
         if user is None:
@@ -46,12 +37,7 @@ class InfoFetcher(BaseInfoFetcher):
     async def query_scene(
         self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: Optional[str] = None
     ):
-        return Scene(
-            id=scene_id,
-            type=scene_type,
-            name=scene_id,
-            avatar=None
-        )
+        return Scene(id=scene_id, type=scene_type, name=scene_id, avatar=None)
 
     async def query_member(self, bot: Bot, scene_type: SceneType, parent_scene_id: str, user_id: str):
         return Member(await self.query_user(bot, user_id), user_id)
@@ -78,11 +64,7 @@ fetcher = InfoFetcher(SupportAdapter.efchat)
 
 @fetcher.supply
 async def _(bot: Bot, event: ChannelMessageEvent):
-    return {
-        "user_id": event.nick,
-        "channel_id": event.channel,
-        "head": event.head
-    }
+    return {"user_id": event.nick, "channel_id": event.channel, "head": event.head}
 
 
 @fetcher.supply
@@ -94,18 +76,11 @@ async def _(bot: Bot, event: WhisperMessageEvent):
 
 @fetcher.supply
 async def _(bot: Bot, event: InviteEvent):
-    return {
-        "user_id": event.nick,
-        "channel_id": event.to
-    }
+    return {"user_id": event.nick, "channel_id": event.to}
 
 
 @fetcher.supply_wildcard
 async def _(bot: Bot, event):
     if hasattr(event, "nick"):
-        return {
-            "user_id": event.nick,
-            "channel_id": bot.cfg.channel,
-            "head": getattr(event, "head", None)
-        }
+        return {"user_id": event.nick, "channel_id": bot.cfg.channel, "head": getattr(event, "head", None)}
     raise NotImplementedError

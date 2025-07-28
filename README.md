@@ -170,8 +170,8 @@ async def inspect(session: Uninfo):
 - [x] Mail
 - [x] WXMP
 - [ ] heybox
-- [x] Gewechat
 - [x] Milky
+- [x] EFChat
 
 ## 相关插件
 
