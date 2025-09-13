@@ -12,7 +12,8 @@ from nonebot.adapters.milky.event import (
     GroupMessageEvent,
     GroupMuteEvent,
     GroupNudgeEvent,
-    GroupRequestEvent,
+    GroupJoinRequestEvent,
+    GroupInvitedJoinRequestEvent,
     MessageEvent,
     MessageRecallEvent,
     TempMessageEvent,
@@ -117,7 +118,7 @@ class InfoFetcher(BaseInfoFetcher):
 
         elif scene_type == SceneType.GROUP:
             group = await bot.get_group_info(group_id=int(scene_id))
-            data = {"group_id": group.group_id, "group_name": group.name}
+            data = {"group_id": group.group_id, "group_name": group.group_name}
             return self.extract_scene(data)
 
     async def query_member(self, bot: Bot, scene_type: SceneType, parent_scene_id: str, user_id: str):
@@ -165,7 +166,7 @@ class InfoFetcher(BaseInfoFetcher):
             for group in groups:
                 data = {
                     "group_id": str(group.group_id),
-                    "group_name": group.name,
+                    "group_name": group.group_name,
                 }
                 yield self.extract_scene(data)
 
@@ -234,7 +235,7 @@ async def _(bot: Bot, event: Union[MessageEvent, GroupMessageEvent, FriendMessag
         }
     base |= {
         "group_id": str(event.data.group.group_id),
-        "group_name": event.data.group.name,
+        "group_name": event.data.group.group_name,
     }
     return base
 
@@ -268,7 +269,7 @@ async def _(bot: Bot, event: MessageRecallEvent):
         info = await bot.get_group_info(group_id=event.data.peer_id)
         base |= {
             "group_id": str(event.data.peer_id),
-            "group_name": info.name,
+            "group_name": info.group_name,
         }
     except ActionFailed:
         base["group_id"] = str(event.data.peer_id)
@@ -307,7 +308,7 @@ async def _(bot: Bot, event: GroupNudgeEvent):
         group = await bot.get_group_info(group_id=event.data.group_id)
         base |= {
             "group_id": str(event.data.group_id),
-            "group_name": group.name,
+            "group_name": group.group_name,
         }
     except ActionFailed:
         base["group_id"] = str(event.data.group_id)
@@ -341,7 +342,7 @@ async def _(bot: Bot, event: FriendRequestEvent):
 
 
 @fetcher.supply
-async def _(bot: Bot, event: GroupRequestEvent):
+async def _(bot: Bot, event: GroupJoinRequestEvent):
     try:
         user = await bot.get_user_profile(user_id=event.data.initiator_id)
         base: dict = {
@@ -356,21 +357,21 @@ async def _(bot: Bot, event: GroupRequestEvent):
         group = await bot.get_group_info(group_id=event.data.group_id)
         base |= {
             "group_id": str(event.data.group_id),
-            "group_name": group.name,
+            "group_name": group.group_name,
         }
     except ActionFailed:
         base["group_id"] = str(event.data.group_id)
-    if event.data.operator_id:
-        try:
-            operator = await bot.get_group_member_info(group_id=event.data.group_id, user_id=event.data.operator_id)
-            base["operator"] = {
-                "user_id": str(event.data.operator_id),
-                "name": operator.nickname,
-                "nickname": operator.card,
-                "gender": operator.sex,
-            }
-        except ActionFailed:
-            base["operator"] = {"user_id": str(event.data.operator_id)}
+    # if event.data:
+    #     try:
+    #         operator = await bot.get_group_member_info(group_id=event.data.group_id, user_id=event.data.operator_id)
+    #         base["operator"] = {
+    #             "user_id": str(event.data.operator_id),
+    #             "name": operator.nickname,
+    #             "nickname": operator.card,
+    #             "gender": operator.sex,
+    #         }
+    #     except ActionFailed:
+    #         base["operator"] = {"user_id": str(event.data.operator_id)}
     return base
 
 
@@ -390,7 +391,7 @@ async def _(bot: Bot, event: GroupInvitationEvent):
         group = await bot.get_group_info(group_id=event.data.group_id)
         base |= {
             "group_id": str(event.data.group_id),
-            "group_name": group.name,
+            "group_name": group.group_name,
         }
     except ActionFailed:
         base["group_id"] = str(event.data.group_id)
@@ -425,7 +426,7 @@ async def _(bot: Bot, event: Union[GroupMemberIncreaseEvent, GroupMemberDecrease
         group = await bot.get_group_info(group_id=event.data.group_id)
         base |= {
             "group_id": str(event.data.group_id),
-            "group_name": group.name,
+            "group_name": group.group_name,
         }
     except ActionFailed:
         base["group_id"] = str(event.data.group_id)
@@ -482,6 +483,6 @@ async def _(bot: Bot, evnet: MilkyEvent):
     group = await bot.get_group_info(group_id=int(group_id))
     base |= {
         "group_id": str(group.group_id),
-        "group_name": group.name,
+        "group_name": group.group_name,
     }
     return base
