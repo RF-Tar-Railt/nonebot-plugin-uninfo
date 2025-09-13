@@ -7,13 +7,13 @@ from nonebot.adapters.milky.event import (
     FriendNudgeEvent,
     FriendRequestEvent,
     GroupInvitationEvent,
+    GroupInvitedJoinRequestEvent,
+    GroupJoinRequestEvent,
     GroupMemberDecreaseEvent,
     GroupMemberIncreaseEvent,
     GroupMessageEvent,
     GroupMuteEvent,
     GroupNudgeEvent,
-    GroupJoinRequestEvent,
-    GroupInvitedJoinRequestEvent,
     MessageEvent,
     MessageRecallEvent,
     TempMessageEvent,
@@ -361,17 +361,40 @@ async def _(bot: Bot, event: GroupJoinRequestEvent):
         }
     except ActionFailed:
         base["group_id"] = str(event.data.group_id)
-    # if event.data:
-    #     try:
-    #         operator = await bot.get_group_member_info(group_id=event.data.group_id, user_id=event.data.operator_id)
-    #         base["operator"] = {
-    #             "user_id": str(event.data.operator_id),
-    #             "name": operator.nickname,
-    #             "nickname": operator.card,
-    #             "gender": operator.sex,
-    #         }
-    #     except ActionFailed:
-    #         base["operator"] = {"user_id": str(event.data.operator_id)}
+    return base
+
+
+@fetcher.supply
+async def _(bot: Bot, event: GroupInvitedJoinRequestEvent):
+    try:
+        user = await bot.get_user_profile(user_id=event.data.target_user_id)
+        base: dict = {
+            "user_id": str(event.data.target_user_id),
+            "name": user.nickname,
+            "nickname": user.remark,
+            "gender": user.sex,
+        }
+    except ActionFailed:
+        base = {"user_id": str(event.data.target_user_id)}
+    try:
+        group = await bot.get_group_info(group_id=event.data.group_id)
+        base |= {
+            "group_id": str(event.data.group_id),
+            "group_name": group.group_name,
+        }
+    except ActionFailed:
+        base["group_id"] = str(event.data.group_id)
+    if event.data:
+        try:
+            operator = await bot.get_group_member_info(group_id=event.data.group_id, user_id=event.data.initiator_id)
+            base["operator"] = {
+                "user_id": str(event.data.initiator_id),
+                "name": operator.nickname,
+                "nickname": operator.card,
+                "gender": operator.sex,
+            }
+        except ActionFailed:
+            base["operator"] = {"user_id": str(event.data.initiator_id)}
     return base
 
 
