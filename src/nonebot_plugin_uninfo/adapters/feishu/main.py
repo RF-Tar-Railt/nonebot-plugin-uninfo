@@ -10,7 +10,7 @@ from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
 from nonebot_plugin_uninfo.model import Member, Role, Scene, SceneType, User
 
 
-def _handle_gender(gender: int) -> str:
+def _handle_gender(gender: Optional[int]) -> str:
     return "male" if gender == 1 else "female" if gender == 2 else "unknown"
 
 
@@ -69,10 +69,10 @@ class InfoFetcher(BaseInfoFetcher):
         return self.extract_user(
             {
                 "user_id": info["open_id"],
-                "name": info["name"],
-                "nickname": info["nickname"],
-                "avatar": info["avatar"]["avatar_origin"],
-                "gender": _handle_gender(info["gender"]),
+                "name": info.get("name"),
+                "nickname": info.get("nickname"),
+                "avatar": info.get("avatar", {}).get("avatar_origin"),
+                "gender": _handle_gender(info.get("gender")),
             }
         )
 
@@ -98,8 +98,8 @@ class InfoFetcher(BaseInfoFetcher):
             return self.extract_scene(
                 {
                     "group_id": scene_id,
-                    "group_name": info["name"],
-                    "group_avatar": info["avatar"],
+                    "group_name": info.get("name"),
+                    "group_avatar": info.get("avatar"),
                 }
             )
 
@@ -136,13 +136,13 @@ class InfoFetcher(BaseInfoFetcher):
                             query={"user_id_type": user["member_id_type"]},
                         )
                         info = resp["data"]["user"]
-                        gender = _handle_gender(info["gender"])
+                        gender = _handle_gender(info.get("gender"))
                         yield self.extract_user(
                             {
                                 "user_id": info["open_id"],
-                                "name": info["name"],
-                                "avatar": info["avatar"]["avatar_origin"],
-                                "nickname": info["nickname"],
+                                "name": info.get("name"),
+                                "avatar": info.get("avatar", {}).get("avatar_origin"),
+                                "nickname": info.get("nickname"),
                                 "gender": gender,
                             }
                         )
@@ -223,9 +223,9 @@ class InfoFetcher(BaseInfoFetcher):
                 yield self.extract_member(
                     {
                         "user_id": info["open_id"],
-                        "name": info["name"],
-                        "avatar": info["avatar"]["avatar_origin"],
-                        "nickname": info["nickname"],
+                        "name": info.get("name"),
+                        "avatar": info.get("avatar", {}).get("avatar_origin"),
+                        "nickname": info.get("nickname"),
                         "member_name": member["name"],
                         "group_id": group_id,
                         "role": (
@@ -258,10 +258,10 @@ async def _(bot: Bot, event: Union[GroupMessageEvent, PrivateMessageEvent]):
             query={"user_id_type": "open_id"},
         )
         info = resp["data"]["user"]
-        user["gender"] = _handle_gender(info["gender"])
-        user["name"] = info["name"]
-        user["avatar"] = info["avatar"]["avatar_origin"]
-        user["nickname"] = info["nickname"]
+        user["gender"] = _handle_gender(info.get("gender"))
+        user["name"] = info.get("name")
+        user["avatar"] = info.get("avatar", {}).get("avatar_origin")
+        user["nickname"] = info.get("nickname")
     except ActionFailed:
         pass
     base = {
