@@ -16,6 +16,7 @@ else:
 class SupportAdapter(StrEnum):
     """支持的适配器"""
 
+    bililive = "bilibili Live"
     console = "Console"
     discord = "Discord"
     dodo = "DoDo"
@@ -68,6 +69,8 @@ class SupportScope(StrEnum):
     """Tailchat平台"""
     efchat = "EFChat"
     """EFChat平台"""
+    bililive = "BiliLive"
+    """Bilibili直播平台"""
 
     onebot12_other = "Onebot12"
     """ob12 的其他平台"""
@@ -115,6 +118,7 @@ class SupportScope(StrEnum):
 class SupportAdapterModule(str, Enum):
     """支持的适配器的模块路径"""
 
+    bililive = "nonebot.adapters.bilibili_live"
     console = "nonebot.adapters.console"
     discord = "nonebot.adapters.discord"
     dodo = "nonebot.adapters.dodo"
