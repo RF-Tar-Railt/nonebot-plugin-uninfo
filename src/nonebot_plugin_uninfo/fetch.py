@@ -33,6 +33,15 @@ class InfoFetcher(metaclass=ABCMeta):
         self._scene_cache: defaultdict[str, dict[tuple[int, str, Optional[str]], Scene]] = defaultdict(dict)
         self._member_cache: defaultdict[str, dict[tuple[int, str, str], Member]] = defaultdict(dict)
 
+    def clean(self):
+        self._user_cache.clear()
+        self._scene_cache.clear()
+        self._member_cache.clear()
+        self.session_cache.clear()
+        for task in self._timertasks:
+            task.cancel()
+        self._timertasks.clear()
+
     def supply(self, func: TSupplier) -> TSupplier:
         event_type = get_type_hints(func)["event"]
         if get_origin(event_type) is Union:
