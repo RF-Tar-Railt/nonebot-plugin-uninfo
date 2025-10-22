@@ -114,7 +114,7 @@ class InfoFetcher(BaseInfoFetcher):
             "user_id": str(info["user_id"]),
             "name": info["nickname"],
             "nickname": info["nickname"],
-            "gender": info.get("sex")
+            "gender": info.get("sex"),
         }
         return self.extract_user(data)
 

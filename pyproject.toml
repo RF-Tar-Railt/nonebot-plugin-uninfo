@@ -1,6 +1,6 @@
 [project]
 name = "nonebot-plugin-uninfo"
-version = "0.9.0"
+version = "0.10.0"
 description = "Universal Information Model for Nonebot2"
 authors = [
     {name = "RF-Tar-Railt", email = "rf_tar_railt@qq.com"},
@@ -86,11 +86,11 @@ dev = [
     "nonebot-adapter-feishu>=2.6.2",
     "nonebot-adapter-kaiheila>=0.3.4",
     "nonebot-adapter-mirai>=2.3.3",
-    "nonebot-adapter-minecraft>=1.4.0",
+    "nonebot-adapter-minecraft>=1.5.2",
     "nonebot-adapter-onebot>=2.4.6",
-    "nonebot-adapter-qq>=1.6.2",
+    "nonebot-adapter-qq>=1.6.5",
     "nonebot-adapter-red>=0.9.0",
-    "nonebot-adapter-satori>=0.13.4",
+    "nonebot-adapter-satori>=0.13.7",
     "nonebot-adapter-telegram>=0.1.0b20",
     "nonebot-adapter-kritor>=0.3.2",
     "nonebot-adapter-tailchat>=0.1.0b13",
@@ -99,6 +99,6 @@ dev = [
     "nonebot-adapter-mail>=1.0.0a7",
     "nonebot-adapter-wxmp>=0.1.8",
     "nonebot-adapter-milky>=1.0.0",
-    "nonebot-adapter-efchat>=0.1.4",
+    "nonebot-adapter-efchat>=0.1.9.post2",
     "nonebot-adapter-bilibili-live>=0.2.4",
 ]

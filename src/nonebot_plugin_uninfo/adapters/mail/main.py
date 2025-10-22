@@ -28,10 +28,7 @@ class InfoFetcher(BaseInfoFetcher):
 
     async def query_user(self, bot: Bot, user_id: str):
         if user_id == bot.self_id:
-            return User(
-                str(bot.bot_info.id),
-                bot.bot_info.name
-            )
+            return User(str(bot.bot_info.id), bot.bot_info.name)
         return User(user_id, user_id)
 
     async def query_scene(

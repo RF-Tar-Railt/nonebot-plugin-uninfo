@@ -115,10 +115,7 @@ class InfoFetcher(BaseInfoFetcher):
     async def query_user(self, bot: Bot, user_id: str):
         if bot.self_id == user_id:
             info = await bot.get_current_account()
-            data = {
-                "user_id": info.account_uin,
-                "name": info.account_name
-            }
+            data = {"user_id": info.account_uin, "name": info.account_name}
         else:
             try:
                 profile = (await bot.get_friend_profile_card(targets=[int(user_id)])).friends_profile_card[0]
