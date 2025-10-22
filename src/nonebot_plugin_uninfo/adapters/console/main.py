@@ -39,6 +39,12 @@ class InfoFetcher(BaseInfoFetcher):
         return Member(user, user.name)
 
     async def query_user(self, bot: Bot, user_id: str):
+        if user_id == bot.self_id:
+            return User(
+                bot.self_id,
+                bot.info.nickname,
+                avatar=f"https://emoji.aranja.com/static/emoji-data/img-apple-160/{ord(bot.info.avatar):x}.png",
+            )
         try:
             user = await bot.get_user(user_id)
             return User(

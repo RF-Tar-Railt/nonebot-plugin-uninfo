@@ -100,7 +100,15 @@ class InfoFetcher(BaseInfoFetcher):
         return None
 
     async def query_user(self, bot: Bot, user_id: str):
-        raise NotImplementedError
+        if bot.self_id == user_id:
+            info = await bot.user_me()
+        else:
+            info = await bot.user_view(user_id=user_id)
+        return User(
+            id=str(info.id_),
+            name=info.username,
+            avatar=info.avatar,
+        )
 
     async def query_scene(
         self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: Optional[str] = None
@@ -145,8 +153,8 @@ class InfoFetcher(BaseInfoFetcher):
         )
 
     async def query_users(self, bot: Bot):
+        resp = await bot.userChat_list()
         while True:
-            resp = await bot.userChat_list()
             for chat in resp.user_chats or []:
                 if chat.target_info:
                     yield User(
@@ -176,8 +184,8 @@ class InfoFetcher(BaseInfoFetcher):
             if scene_type == SceneType.PRIVATE:
                 return
 
+        resp = await bot.guild_list()
         while True:
-            resp = await bot.guild_list()
             for guild in resp.guilds or []:
                 if not guild.id_:
                     continue
@@ -205,13 +213,30 @@ class InfoFetcher(BaseInfoFetcher):
             resp = await bot.guild_list(page=(resp.meta.page or 0) + 1)
 
     async def query_members(self, bot: Bot, scene_type: SceneType, parent_scene_id: str):
-        if scene_type != SceneType.GUILD:
+        if scene_type in (SceneType.PRIVATE, SceneType.GROUP):
             return
-        guild_id = parent_scene_id
-
-        while True:
-            resp = await bot.guild_userList(guild_id=guild_id)
-            for member in resp.users or []:
+        if scene_type == SceneType.GUILD:
+            resp = await bot.guild_userList(guild_id=parent_scene_id)
+            while True:
+                for member in resp.users or []:
+                    user = User(
+                        id=str(member.id_),
+                        name=member.username,
+                        avatar=member.avatar,
+                    )
+                    yield Member(
+                        user=user,
+                        nick=member.nickname or member.username,
+                        role=await _handle_role(bot, parent_scene_id, member.roles or []),
+                        joined_at=datetime.fromtimestamp(member.joined_at / 1000) if member.joined_at else None,
+                        mute=MuteInfo(muted=True, duration=timedelta(60)) if member.status == 10 else None,
+                    )
+                if not resp.meta or resp.meta.page == resp.meta.page_total:
+                    break
+                resp = await bot.guild_userList(guild_id=parent_scene_id, page=(resp.meta.page or 0) + 1)
+        else:
+            users = await bot.channel_userList(channel_id=parent_scene_id)
+            for member in users:
                 user = User(
                     id=str(member.id_),
                     name=member.username,
@@ -220,7 +245,7 @@ class InfoFetcher(BaseInfoFetcher):
                 yield Member(
                     user=user,
                     nick=member.nickname or member.username,
-                    role=await _handle_role(bot, guild_id, member.roles or []),
+                    role=await _handle_role(bot, parent_scene_id, member.roles or []),
                     joined_at=datetime.fromtimestamp(member.joined_at / 1000) if member.joined_at else None,
                     mute=MuteInfo(muted=True, duration=timedelta(60)) if member.status == 10 else None,
                 )

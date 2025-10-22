@@ -144,7 +144,10 @@ class InfoFetcher(BaseInfoFetcher):
         return None
 
     async def query_user(self, bot: Bot, user_id: str):
-        user = await bot.get_user(user_id=int(user_id))
+        if bot.self_id == user_id:
+            user = await bot.get_current_user()
+        else:
+            user = await bot.get_user(user_id=int(user_id))
         data = {
             "user_id": str(user.id),
             "name": user.username,

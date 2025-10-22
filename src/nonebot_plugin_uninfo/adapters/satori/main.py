@@ -111,6 +111,8 @@ class InfoFetcher(BaseInfoFetcher):
         return self.extract_scene(data)
 
     async def query_user(self, bot: Bot, user_id: str):
+        if user_id == bot.self_info.id:
+            return self._pack_user(bot.self_info)
         user = await bot.user_get(user_id=user_id)
         return self._pack_user(user)
 

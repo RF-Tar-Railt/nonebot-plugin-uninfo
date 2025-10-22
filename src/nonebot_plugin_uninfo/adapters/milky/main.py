@@ -95,13 +95,21 @@ class InfoFetcher(BaseInfoFetcher):
         )
 
     async def query_user(self, bot: Bot, user_id: str) -> User:
-        info = await bot.get_user_profile(user_id=int(user_id))
-        data = {
-            "user_id": user_id,
-            "name": info.nickname,
-            "nickname": info.remark,
-            "gender": info.sex,
-        }
+        if user_id == bot.self_id:
+            info = await bot.get_login_info()
+            data = {
+                "user_id": str(info.uin),
+                "name": info.nickname,
+                "nickname": info.nickname
+            }
+        else:
+            info = await bot.get_user_profile(user_id=int(user_id))
+            data = {
+                "user_id": user_id,
+                "name": info.nickname,
+                "nickname": info.remark,
+                "gender": info.sex,
+            }
         return self.extract_user(data)
 
     async def query_scene(

@@ -60,6 +60,7 @@ class InfoFetcher(BaseInfoFetcher):
         )
 
     async def query_user(self, bot: Bot, user_id: str):
+
         resp = await bot.call_api(
             f"contact/v3/users/{user_id}",
             method="GET",

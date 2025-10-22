@@ -148,11 +148,22 @@ fetcher = InfoFetcher(SupportAdapter.telegram)
 
 
 async def _supply_userdata(bot: Bot, user: Union[str, TelegramUser]):
+
     if isinstance(user, TelegramUser):
+        if str(user.id) == str(bot.self_id):
+            user = await bot.get_me()
         res = {
             "user_id": str(user.id),
             "name": user.username or "",
             "nickname": user.first_name + (f" {user.last_name}" if user.last_name else ""),
+            "avatar": None,
+        }
+    elif user == str(bot.self_id):
+        _user = await bot.get_me()
+        res = {
+            "user_id": str(_user.id),
+            "name": _user.username or "",
+            "nickname": _user.first_name + (f" {_user.last_name}" if _user.last_name else ""),
             "avatar": None,
         }
     else:

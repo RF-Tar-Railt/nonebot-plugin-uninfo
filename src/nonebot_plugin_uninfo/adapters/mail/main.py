@@ -27,12 +27,17 @@ class InfoFetcher(BaseInfoFetcher):
         return None
 
     async def query_user(self, bot: Bot, user_id: str):
-        raise NotImplementedError
+        if user_id == bot.self_id:
+            return User(
+                str(bot.bot_info.id),
+                bot.bot_info.name
+            )
+        return User(user_id, user_id)
 
     async def query_scene(
         self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: Optional[str] = None
     ):
-        raise NotImplementedError
+        return Scene(id=scene_id, type=SceneType.PRIVATE, name=scene_id)
 
     async def query_member(self, bot: Bot, scene_type: SceneType, parent_scene_id: str, user_id: str):
         raise NotImplementedError

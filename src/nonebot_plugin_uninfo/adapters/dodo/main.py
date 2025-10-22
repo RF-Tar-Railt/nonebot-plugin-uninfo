@@ -111,6 +111,13 @@ class InfoFetcher(BaseInfoFetcher):
         return None
 
     async def query_user(self, bot: Bot, user_id: str):
+        if user_id == bot.self_id:
+            info = await bot.get_bot_info()
+            return User(
+                id=info.dodo_source_id,
+                name=info.nick_name,
+                avatar=info.avatar_url,
+            )
         raise NotImplementedError
 
     async def query_scene(

@@ -31,7 +31,7 @@ ROLES = {
 class InfoFetcher(BaseInfoFetcher):
     def extract_user(self, data):
         return User(
-            id=data["user_id"],
+            id=str(data["user_id"]),
             name=data["name"],
             nick=data["nickname"],
             avatar=data.get("avatar", f"http://q1.qlogo.cn/g?b=qq&nk={data['user_id']}&s=640"),
@@ -40,7 +40,7 @@ class InfoFetcher(BaseInfoFetcher):
     def extract_scene(self, data):
         if "group_id" in data:
             return Scene(
-                id=data["group_id"],
+                id=str(data["group_id"]),
                 type=SceneType.GROUP,
                 name=data.get("group_name"),
                 avatar=f"https://p.qlogo.cn/gh/{data['group_id']}/{data['group_id']}/",
@@ -48,34 +48,34 @@ class InfoFetcher(BaseInfoFetcher):
         if "guild_id" in data:
             if "channel_id" in data:
                 return Scene(
-                    id=data["channel_id"],
+                    id=str(data["channel_id"]),
                     type=SceneType.CHANNEL_TEXT,
                     name=data["channel_name"],
                     parent=Scene(
-                        id=data["guild_id"],
+                        id=str(data["guild_id"]),
                         type=SceneType.GUILD,
                         name=data.get("guild_name"),
                     ),
                 )
             return Scene(
-                id=data["guild_id"],
+                id=str(data["guild_id"]),
                 type=SceneType.GUILD,
                 name=data.get("guild_name"),
             )
         if "parent_group_id" in data:
             return Scene(
-                id=data["user_id"],
+                id=str(data["user_id"]),
                 type=SceneType.PRIVATE,
                 avatar=f"http://q1.qlogo.cn/g?b=qq&nk={data['user_id']}&s=640",
                 parent=Scene(
-                    id=data["parent_group_id"],
+                    id=str(data["parent_group_id"]),
                     type=SceneType.GROUP,
                     name=data.get("parent_group_name"),
                     avatar=f"https://p.qlogo.cn/gh/{data['parent_group_id']}/{data['parent_group_id']}/",
                 ),
             )
         return Scene(
-            id=data["user_id"],
+            id=str(data["user_id"]),
             type=SceneType.PRIVATE,
             avatar=f"http://q1.qlogo.cn/g?b=qq&nk={data['user_id']}&s=640",
         )
@@ -97,7 +97,7 @@ class InfoFetcher(BaseInfoFetcher):
             )
         return Member(
             User(
-                id=data["user_id"],
+                id=str(data["user_id"]),
                 name=data["name"],
                 nick=data.get("nickname"),
                 avatar=data.get("avatar", f"https://q2.qlogo.cn/headimg_dl?dst_uin={data['user_id']}&spec=640"),
@@ -113,15 +113,22 @@ class InfoFetcher(BaseInfoFetcher):
         )
 
     async def query_user(self, bot: Bot, user_id: str):
-        try:
-            profile = (await bot.get_friend_profile_card(targets=[int(user_id)])).friends_profile_card[0]
-        except ActionFailed:
-            profile = (await bot.get_stranger_profile_card(targets=[int(user_id)])).strangers_profile_card[0]
-        data = {
-            "user_id": profile.uin,
-            "name": profile.nick,
-            "nickname": profile.remark,
-        }
+        if bot.self_id == user_id:
+            info = await bot.get_current_account()
+            data = {
+                "user_id": info.account_uin,
+                "name": info.account_name
+            }
+        else:
+            try:
+                profile = (await bot.get_friend_profile_card(targets=[int(user_id)])).friends_profile_card[0]
+            except ActionFailed:
+                profile = (await bot.get_stranger_profile_card(targets=[int(user_id)])).strangers_profile_card[0]
+            data = {
+                "user_id": profile.uin,
+                "name": profile.nick,
+                "nickname": profile.remark,
+            }
         return self.extract_user(data)
 
     async def query_scene(
