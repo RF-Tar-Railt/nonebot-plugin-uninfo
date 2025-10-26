@@ -1,13 +1,12 @@
-from typing import Callable
+from collections.abc import Callable
+from typing import Optional
 
-from nonebot.adapters import Bot, Event
 from nonebot.permission import Permission
 
-from .params import get_session
+from .params import Session, UniSession
 
 
-async def _private(bot: Bot, event: Event) -> bool:
-    sess = await get_session(bot, event)
+async def _private(sess: Optional[Session] = UniSession()) -> bool:
     if not sess:
         return False
     return sess.scene.is_private
@@ -17,8 +16,7 @@ PRIVATE: Permission = Permission(_private)
 """ 匹配任意私聊类型事件"""
 
 
-async def _group(bot: Bot, event: Event) -> bool:
-    sess = await get_session(bot, event)
+async def _group(sess: Optional[Session] = UniSession()) -> bool:
     if not sess:
         return False
     return sess.scene.is_group
@@ -28,8 +26,7 @@ GROUP: Permission = Permission(_group)
 """匹配任意群聊类型事件"""
 
 
-async def _guild(bot: Bot, event: Event) -> bool:
-    sess = await get_session(bot, event)
+async def _guild(sess: Optional[Session] = UniSession()) -> bool:
     if not sess:
         return False
     return sess.scene.is_guild or sess.scene.is_channel
@@ -42,8 +39,7 @@ GUILD: Permission = Permission(_guild)
 def ROLE_IN(role_id: str, *role_ids: str) -> Permission:
     """检查成员是否在指定角色组中"""
 
-    async def _role_in(bot: Bot, event: Event) -> bool:
-        sess = await get_session(bot, event)
+    async def _role_in(sess: Optional[Session] = UniSession()) -> bool:
         if not sess or not sess.member or not sess.member.role:
             return False
         return sess.member.role.id in (role_id, *role_ids)
@@ -54,8 +50,7 @@ def ROLE_IN(role_id: str, *role_ids: str) -> Permission:
 def ROLE_NOT_IN(role_id: str, *role_ids: str) -> Permission:
     """检查成员是否不在指定角色组中"""
 
-    async def _role_not_in(bot: Bot, event: Event) -> bool:
-        sess = await get_session(bot, event)
+    async def _role_not_in(sess: Optional[Session] = UniSession()) -> bool:
         if not sess or not sess.member or not sess.member.role:
             return True
         return sess.member.role.id not in (role_id, *role_ids)
@@ -78,8 +73,7 @@ def OWNER() -> Permission:
 def ROLE_LEVEL(checker: Callable[[int], bool]) -> Permission:
     """检查用户角色等级"""
 
-    async def _level(bot: Bot, event: Event) -> bool:
-        sess = await get_session(bot, event)
+    async def _level(sess: Optional[Session] = UniSession()) -> bool:
         if not sess or not sess.member or not sess.member.role:
             return False
         return checker(sess.member.role.level)
@@ -90,8 +84,7 @@ def ROLE_LEVEL(checker: Callable[[int], bool]) -> Permission:
 def USER_IN(user_id: str, *user_ids: str) -> Permission:
     """检查用户是否在指定用户中"""
 
-    async def _user_in(bot: Bot, event: Event) -> bool:
-        sess = await get_session(bot, event)
+    async def _user_in(sess: Optional[Session] = UniSession()) -> bool:
         if not sess:
             return False
         return sess.user.id in (user_id, *user_ids)
@@ -102,8 +95,7 @@ def USER_IN(user_id: str, *user_ids: str) -> Permission:
 def USER_NOT_IN(user_id: str, *user_ids: str) -> Permission:
     """检查用户是否不在指定用户中"""
 
-    async def _user_not_in(bot: Bot, event: Event) -> bool:
-        sess = await get_session(bot, event)
+    async def _user_not_in(sess: Optional[Session] = UniSession()) -> bool:
         if not sess:
             return True
         return sess.user.id not in (user_id, *user_ids)
@@ -114,8 +106,7 @@ def USER_NOT_IN(user_id: str, *user_ids: str) -> Permission:
 def SCENE_IN(scene_id: str, *scene_ids: str) -> Permission:
     """检查场景是否在指定场景中"""
 
-    async def _scene_in(bot: Bot, event: Event) -> bool:
-        sess = await get_session(bot, event)
+    async def _scene_in(sess: Optional[Session] = UniSession()) -> bool:
         if not sess:
             return False
         return sess.scene.id in (scene_id, *scene_ids)
@@ -126,8 +117,7 @@ def SCENE_IN(scene_id: str, *scene_ids: str) -> Permission:
 def SCENE_NOT_IN(scene_id: str, *scene_ids: str) -> Permission:
     """检查场景是否不在指定场景中"""
 
-    async def _scene_not_in(bot: Bot, event: Event) -> bool:
-        sess = await get_session(bot, event)
+    async def _scene_not_in(sess: Optional[Session] = UniSession()) -> bool:
         if not sess:
             return True
         return sess.scene.id not in (scene_id, *scene_ids)
