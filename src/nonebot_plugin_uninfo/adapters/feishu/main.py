@@ -1,4 +1,4 @@
-from typing import Any, Optional, Union
+from typing import Any
 
 from nonebot.adapters.feishu import Bot
 from nonebot.adapters.feishu.event import GroupMessageEvent, PrivateMessageEvent
@@ -10,7 +10,7 @@ from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
 from nonebot_plugin_uninfo.model import Member, Role, Scene, SceneType, User
 
 
-def _handle_gender(gender: Optional[int]) -> str:
+def _handle_gender(gender: int | None) -> str:
     return "male" if gender == 1 else "female" if gender == 2 else "unknown"
 
 
@@ -39,7 +39,7 @@ class InfoFetcher(BaseInfoFetcher):
             avatar=data.get("avatar"),
         )
 
-    def extract_member(self, data: dict[str, Any], user: Optional[User]):
+    def extract_member(self, data: dict[str, Any], user: User | None):
         if "group_id" not in data:
             return None
         if user:
@@ -77,9 +77,7 @@ class InfoFetcher(BaseInfoFetcher):
             }
         )
 
-    async def query_scene(
-        self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: Optional[str] = None
-    ):
+    async def query_scene(self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: str | None = None):
         if scene_type == SceneType.PRIVATE:
             if user := await self.query_user(bot, scene_id):
                 return self.extract_scene(
@@ -148,9 +146,7 @@ class InfoFetcher(BaseInfoFetcher):
                             }
                         )
 
-    async def query_scenes(
-        self, bot: Bot, scene_type: Optional[SceneType] = None, *, parent_scene_id: Optional[str] = None
-    ):
+    async def query_scenes(self, bot: Bot, scene_type: SceneType | None = None, *, parent_scene_id: str | None = None):
         if scene_type is None or scene_type == SceneType.PRIVATE:
             async for user in self.query_users(bot):
                 yield self.extract_scene(
@@ -250,7 +246,7 @@ fetcher = InfoFetcher(SupportAdapter.feishu)
 
 
 @fetcher.supply
-async def _(bot: Bot, event: Union[GroupMessageEvent, PrivateMessageEvent]):
+async def _(bot: Bot, event: GroupMessageEvent | PrivateMessageEvent):
     user = {}
     try:
         resp = await bot.call_api(

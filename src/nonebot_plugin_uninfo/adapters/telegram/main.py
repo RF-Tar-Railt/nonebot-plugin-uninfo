@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Optional, Union
 
 from nonebot.adapters.telegram import Bot
 from nonebot.adapters.telegram.event import (
@@ -65,7 +64,7 @@ class InfoFetcher(BaseInfoFetcher):
             avatar=data.get("avatar"),
         )
 
-    def extract_member(self, data, user: Optional[User]):
+    def extract_member(self, data, user: User | None):
         if "chat_id" not in data:
             return None
         if user:
@@ -90,9 +89,7 @@ class InfoFetcher(BaseInfoFetcher):
         if data["name"] or data["nickname"] or data["avatar"]:
             return self.extract_user(data)
 
-    async def query_scene(
-        self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: Optional[str] = None
-    ):
+    async def query_scene(self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: str | None = None):
         if scene_type == SceneType.PRIVATE:
             if user := await self.query_user(bot, scene_id):
                 data = {
@@ -130,7 +127,7 @@ class InfoFetcher(BaseInfoFetcher):
     def query_users(self, bot: Bot):
         raise NotImplementedError
 
-    def query_scenes(self, bot: Bot, scene_type: Optional[SceneType] = None, *, parent_scene_id: Optional[str] = None):
+    def query_scenes(self, bot: Bot, scene_type: SceneType | None = None, *, parent_scene_id: str | None = None):
         raise NotImplementedError
 
     def query_members(self, bot: Bot, scene_type: SceneType, parent_scene_id: str):
@@ -147,7 +144,7 @@ class InfoFetcher(BaseInfoFetcher):
 fetcher = InfoFetcher(SupportAdapter.telegram)
 
 
-async def _supply_userdata(bot: Bot, user: Union[str, TelegramUser]):
+async def _supply_userdata(bot: Bot, user: str | TelegramUser):
 
     if isinstance(user, TelegramUser):
         if str(user.id) == str(bot.self_id):
@@ -201,12 +198,12 @@ async def _supply_userdata(bot: Bot, user: Union[str, TelegramUser]):
 
 
 @fetcher.supply
-async def _(bot: Bot, event: Union[PrivateMessageEvent, PrivateEditedMessageEvent]):
+async def _(bot: Bot, event: PrivateMessageEvent | PrivateEditedMessageEvent):
     return await _supply_userdata(bot, event.from_)
 
 
 @fetcher.supply
-async def _(bot: Bot, event: Union[GroupMessageEvent, GroupEditedMessageEvent]):
+async def _(bot: Bot, event: GroupMessageEvent | GroupEditedMessageEvent):
     base = await _supply_userdata(bot, event.from_)
     base["chat_id"] = str(event.chat.id)
     base["chat_name"] = event.chat.title
@@ -219,7 +216,7 @@ async def _(bot: Bot, event: Union[GroupMessageEvent, GroupEditedMessageEvent]):
 
 
 @fetcher.supply
-async def _(bot: Bot, event: Union[ForumTopicMessageEvent, ForumTopicEditedMessageEvent]):
+async def _(bot: Bot, event: ForumTopicMessageEvent | ForumTopicEditedMessageEvent):
     base = await _supply_userdata(bot, event.from_)
     base["chat_id"] = str(event.chat.id)
     base["chat_name"] = event.chat.title

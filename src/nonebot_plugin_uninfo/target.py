@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Literal, Union, overload
+from typing import TYPE_CHECKING, Literal, overload
 
 from .constraint import SupportScope
 from .model import BasicInfo, Member, Scene, Session, User
@@ -12,18 +12,16 @@ def to_target(model: Session, *, without_self: bool = False) -> "Target": ...
 
 
 @overload
-def to_target(model: Union[User, Member, Scene], info: BasicInfo) -> "Target": ...
+def to_target(model: User | Member | Scene, info: BasicInfo) -> "Target": ...
 
 
 @overload
-def to_target(
-    model: Union[User, Member, Scene], info: Union[str, SupportScope], *, without_self: Literal[True]
-) -> "Target": ...
+def to_target(model: User | Member | Scene, info: str | SupportScope, *, without_self: Literal[True]) -> "Target": ...
 
 
 def to_target(
-    model: Union[Session, User, Member, Scene],
-    info: Union[BasicInfo, str, SupportScope, None] = None,
+    model: Session | User | Member | Scene,
+    info: BasicInfo | str | SupportScope | None = None,
     without_self: bool = False,
 ) -> "Target":
     try:

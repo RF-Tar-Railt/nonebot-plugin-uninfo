@@ -1,5 +1,3 @@
-from typing import Optional, Union
-
 from nonebot.adapters.dodo import Bot
 from nonebot.adapters.dodo.event import (
     CardMessageButtonClickEvent,
@@ -93,7 +91,7 @@ class InfoFetcher(BaseInfoFetcher):
             avatar=data["avatar"],
         )
 
-    def extract_member(self, data, user: Optional[User]):
+    def extract_member(self, data, user: User | None):
         if "guild_id" in data or "channel_id" in data:
             if user:
                 return Member(user, nick=data["nickname"], role=data.get("role"), joined_at=data.get("joined_at"))
@@ -120,9 +118,7 @@ class InfoFetcher(BaseInfoFetcher):
             )
         raise NotImplementedError
 
-    async def query_scene(
-        self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: Optional[str] = None
-    ):
+    async def query_scene(self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: str | None = None):
         if scene_type == SceneType.GUILD:
             guild = await bot.get_island_info(island_source_id=scene_id)
             return self.extract_scene(
@@ -163,9 +159,7 @@ class InfoFetcher(BaseInfoFetcher):
     def query_users(self, bot: Bot):
         raise NotImplementedError
 
-    async def query_scenes(
-        self, bot: Bot, scene_type: Optional[SceneType] = None, *, parent_scene_id: Optional[str] = None
-    ):
+    async def query_scenes(self, bot: Bot, scene_type: SceneType | None = None, *, parent_scene_id: str | None = None):
         if scene_type in (SceneType.PRIVATE, SceneType.GROUP):
             return
 
@@ -237,17 +231,17 @@ async def _(bot: Bot, event: PersonalMessageEvent):
 @fetcher.supply
 async def _(
     bot: Bot,
-    event: Union[
-        ChannelMessageEvent,
-        MessageReactionEvent,
-        CardMessageButtonClickEvent,
-        CardMessageFormSubmitEvent,
-        CardMessageListSubmitEvent,
-        ChannelVoiceMemberJoinEvent,
-        ChannelVoiceMemberLeaveEvent,
-        ChannelArticleEvent,
-        ChannelArticleCommentEvent,
-    ],
+    event: (
+        ChannelMessageEvent
+        | MessageReactionEvent
+        | CardMessageButtonClickEvent
+        | CardMessageFormSubmitEvent
+        | CardMessageListSubmitEvent
+        | ChannelVoiceMemberJoinEvent
+        | ChannelVoiceMemberLeaveEvent
+        | ChannelArticleEvent
+        | ChannelArticleCommentEvent
+    ),
 ):
     base = {
         "user_id": event.dodo_source_id,

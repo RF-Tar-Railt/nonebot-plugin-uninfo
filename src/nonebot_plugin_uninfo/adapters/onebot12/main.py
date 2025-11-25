@@ -1,5 +1,4 @@
 from datetime import timedelta
-from typing import Optional, Union
 
 from nonebot.adapters.onebot.v12 import Bot
 from nonebot.adapters.onebot.v12.event import (
@@ -71,7 +70,7 @@ class InfoFetcher(BaseInfoFetcher):
             type=SceneType.PRIVATE,
         )
 
-    def extract_member(self, data, user: Optional[User]):
+    def extract_member(self, data, user: User | None):
         if "group_id" not in data:
             return None
         if "guild_id" not in data:
@@ -112,9 +111,7 @@ class InfoFetcher(BaseInfoFetcher):
         }
         return self.extract_user(data)
 
-    async def query_scene(
-        self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: Optional[str] = None
-    ):
+    async def query_scene(self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: str | None = None):
         if scene_type == SceneType.PRIVATE:
             if user := await self.query_user(bot, scene_id):
                 data = {
@@ -173,9 +170,7 @@ class InfoFetcher(BaseInfoFetcher):
             }
             yield self.extract_user(data)
 
-    async def query_scenes(
-        self, bot: Bot, scene_type: Optional[SceneType] = None, *, parent_scene_id: Optional[str] = None
-    ):
+    async def query_scenes(self, bot: Bot, scene_type: SceneType | None = None, *, parent_scene_id: str | None = None):
         if scene_type is None or scene_type == SceneType.PRIVATE:
             async for user in self.query_users(bot):
                 data = {
@@ -256,12 +251,7 @@ fetcher = InfoFetcher(SupportAdapter.onebot12)
 @fetcher.supply
 async def _(
     bot: Bot,
-    event: Union[
-        PrivateMessageDeleteEvent,
-        PrivateMessageEvent,
-        FriendDecreaseEvent,
-        FriendIncreaseEvent,
-    ],
+    event: PrivateMessageDeleteEvent | PrivateMessageEvent | FriendDecreaseEvent | FriendIncreaseEvent,
 ):
     try:
         user_info = await bot.get_user_info(user_id=event.user_id)
@@ -277,12 +267,7 @@ async def _(
 @fetcher.supply
 async def _(
     bot: Bot,
-    event: Union[
-        GroupMemberDecreaseEvent,
-        GroupMemberIncreaseEvent,
-        GroupMessageDeleteEvent,
-        GroupMessageEvent,
-    ],
+    event: GroupMemberDecreaseEvent | GroupMemberIncreaseEvent | GroupMessageDeleteEvent | GroupMessageEvent,
 ):
     try:
         group_info = await bot.get_group_info(group_id=event.group_id)
@@ -312,12 +297,7 @@ async def _(
 @fetcher.supply
 async def _(
     bot: Bot,
-    event: Union[
-        ChannelMemberDecreaseEvent,
-        ChannelMemberIncreaseEvent,
-        ChannelMessageDeleteEvent,
-        ChannelMessageEvent,
-    ],
+    event: ChannelMemberDecreaseEvent | ChannelMemberIncreaseEvent | ChannelMessageDeleteEvent | ChannelMessageEvent,
 ):
     try:
         guild_info = await bot.get_group_info(group_id=event.guild_id)
@@ -354,10 +334,7 @@ async def _(
 @fetcher.supply
 async def _(
     bot: Bot,
-    event: Union[
-        ChannelCreateEvent,
-        ChannelDeleteEvent,
-    ],
+    event: ChannelCreateEvent | ChannelDeleteEvent,
 ):
     try:
         guild_info = await bot.get_group_info(group_id=event.guild_id)
@@ -385,10 +362,7 @@ async def _(
 @fetcher.supply
 async def _(
     bot: Bot,
-    event: Union[
-        GuildMemberDecreaseEvent,
-        GuildMemberIncreaseEvent,
-    ],
+    event: GuildMemberDecreaseEvent | GuildMemberIncreaseEvent,
 ):
     try:
         guild_info = await bot.get_guild_info(guild_id=event.guild_id)

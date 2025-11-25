@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-from typing import Optional
 
 from nonebot.adapters.kaiheila import Bot
 from nonebot.adapters.kaiheila.api.model import Channel as KookChannel
@@ -83,7 +82,7 @@ class InfoFetcher(BaseInfoFetcher):
             avatar=data["avatar"],
         )
 
-    def extract_member(self, data, user: Optional[User]):
+    def extract_member(self, data, user: User | None):
         if "guild_id" in data or "channel_id" in data:
             if user:
                 return Member(user, nick=data["nickname"], role=data.get("role"), joined_at=data.get("joined_at"))
@@ -110,9 +109,7 @@ class InfoFetcher(BaseInfoFetcher):
             avatar=info.avatar,
         )
 
-    async def query_scene(
-        self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: Optional[str] = None
-    ):
+    async def query_scene(self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: str | None = None):
         if scene_type == SceneType.GUILD:
             guild = await bot.guild_view(guild_id=scene_id)
             return self.extract_scene(
@@ -166,9 +163,7 @@ class InfoFetcher(BaseInfoFetcher):
                 break
             resp = await bot.userChat_list(page=(resp.meta.page or 0) + 1)
 
-    async def query_scenes(
-        self, bot: Bot, scene_type: Optional[SceneType] = None, *, parent_scene_id: Optional[str] = None
-    ):
+    async def query_scenes(self, bot: Bot, scene_type: SceneType | None = None, *, parent_scene_id: str | None = None):
         if scene_type == SceneType.GROUP:
             return
 

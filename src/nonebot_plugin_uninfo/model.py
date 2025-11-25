@@ -2,7 +2,7 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 from enum import IntEnum
 import json
-from typing import Any, Optional, TypedDict, TypeVar, Union
+from typing import Any, Optional, TypedDict, TypeVar
 from typing_extensions import Required
 
 from nonebot.compat import DEFAULT_CONFIG, PYDANTIC_V2
@@ -72,7 +72,7 @@ class ModelMixin:
     def dump(self) -> dict[str, Any]:
         return json.loads(self.dump_json())
 
-    def dump_json(self, indent: Optional[int] = None) -> str:
+    def dump_json(self, indent: int | None = None) -> str:
         return json.dumps(asdict(self), ensure_ascii=False, indent=indent, cls=DatetimeJsonEncoder)  # type: ignore  # noqa
 
 
@@ -95,9 +95,9 @@ class Scene(ModelMixin, HashableMixin):
     """场景id"""
     type: SceneType
     """场景类型"""
-    name: Optional[str] = None
+    name: str | None = None
     """场景名称"""
-    avatar: Optional[str] = None
+    avatar: str | None = None
     """场景头像"""
     parent: Optional["Scene"] = None
     """父级场景"""
@@ -134,11 +134,11 @@ class User(ModelMixin, HashableMixin):
 
     id: str
     """用户id"""
-    name: Optional[str] = None
+    name: str | None = None
     """用户名"""
-    nick: Optional[str] = None
+    nick: str | None = None
     """用户昵称"""
-    avatar: Optional[str] = None
+    avatar: str | None = None
     """用户头像"""
     gender: str = "unknown"
     """用户性别"""
@@ -153,7 +153,7 @@ class Role(ModelMixin):
     """角色id"""
     level: int = 0
     """角色等级/权限"""
-    name: Optional[str] = None
+    name: str | None = None
     """角色名称"""
 
 
@@ -166,7 +166,7 @@ class MuteInfo(ModelMixin):
     """是否被禁言"""
     duration: timedelta
     """禁言时长"""
-    start_at: Optional[datetime] = None
+    start_at: datetime | None = None
     """禁言开始时间"""
 
     @classmethod
@@ -191,13 +191,13 @@ class Member(ModelMixin):
 
     user: User
     """群员用户信息"""
-    nick: Optional[str] = None
+    nick: str | None = None
     """群员昵称"""
-    role: Optional[Role] = None
+    role: Role | None = None
     """群员角色"""
-    mute: Optional[MuteInfo] = None
+    mute: MuteInfo | None = None
     """群员禁言信息"""
-    joined_at: Optional[datetime] = None
+    joined_at: datetime | None = None
     """加入时间"""
 
     @property
@@ -224,19 +224,19 @@ class Session(ModelMixin, HashableMixin):
 
     self_id: str
     """机器人id"""
-    adapter: Union[str, SupportAdapter]
+    adapter: str | SupportAdapter
     """适配器名称"""
-    scope: Union[str, SupportScope]
+    scope: str | SupportScope
     """适配器范围，相比 adapter 更指向实际平台"""
     scene: Scene
     """场景信息"""
     user: User
     """用户信息"""
-    member: Optional[Member] = None
+    member: Member | None = None
     """群员信息"""
-    operator: Optional[Member] = None
+    operator: Member | None = None
     """操作者信息"""
-    platform: Union[str, set[str], None] = None
+    platform: str | set[str] | None = None
     """平台名称，仅当目标适配器存在多个平台时使用"""
 
     @property
@@ -260,7 +260,7 @@ class Session(ModelMixin, HashableMixin):
         return self.scene.id
 
     @property
-    def guild(self) -> Optional[Scene]:
+    def guild(self) -> Scene | None:
         """父级频道"""
         if self.scene.is_guild:
             return self.scene
@@ -268,19 +268,19 @@ class Session(ModelMixin, HashableMixin):
             return self.scene.parent
 
     @property
-    def channel(self) -> Optional[Scene]:
+    def channel(self) -> Scene | None:
         """子频道"""
         if self.scene.is_channel:
             return self.scene
 
     @property
-    def group(self) -> Optional[Scene]:
+    def group(self) -> Scene | None:
         """群组"""
         if self.scene.is_group:
             return self.scene
 
     @property
-    def friend(self) -> Optional[Scene]:
+    def friend(self) -> Scene | None:
         """好友"""
         if self.scene.is_private:
             return self.scene

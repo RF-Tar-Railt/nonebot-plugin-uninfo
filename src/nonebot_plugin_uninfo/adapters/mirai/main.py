@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-from typing import Optional, Union
 
 from nonebot.adapters.mirai import Bot
 from nonebot.adapters.mirai.event import (
@@ -105,7 +104,7 @@ class InfoFetcher(BaseInfoFetcher):
             avatar=f"https://p.qlogo.cn/gh/{data['group_id']}/{data['group_id']}/",
         )
 
-    def extract_member(self, data, user: Optional[User]):
+    def extract_member(self, data, user: User | None):
         if "group_id" not in data:
             return None
         if user:
@@ -153,9 +152,7 @@ class InfoFetcher(BaseInfoFetcher):
             }
         return self.extract_user(data)
 
-    async def query_scene(
-        self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: Optional[str] = None
-    ):
+    async def query_scene(self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: str | None = None):
         if scene_type == SceneType.PRIVATE:
             if user := await self.query_user(bot, scene_id):
                 data = {
@@ -204,9 +201,7 @@ class InfoFetcher(BaseInfoFetcher):
             }
             yield self.extract_user(data)
 
-    async def query_scenes(
-        self, bot: Bot, scene_type: Optional[SceneType] = None, *, parent_scene_id: Optional[str] = None
-    ):
+    async def query_scenes(self, bot: Bot, scene_type: SceneType | None = None, *, parent_scene_id: str | None = None):
         if scene_type is not None and scene_type > SceneType.GROUP:
             return
 
@@ -302,7 +297,7 @@ async def _(bot: Bot, event: StrangerMessage):
 
 
 @fetcher.supply
-async def _(bot: Bot, event: Union[GroupMessage, TempMessage]):
+async def _(bot: Bot, event: GroupMessage | TempMessage):
     try:
         member_info = await bot.get_member_profile(group=event.group.id, member=event.sender.id)
         nickname = member_info.nickname
@@ -356,16 +351,16 @@ async def _(bot: Bot, event: BotJoinGroupEvent):
 @fetcher.supply
 async def _(
     bot: Bot,
-    event: Union[
-        BotMuteEvent,
-        BotUnmuteEvent,
-        BotLeaveEventKick,
-        BotLeaveEventDisband,
-        GroupNameChangeEvent,
-        GroupEntranceAnnouncementChangeEvent,
-        GroupMuteAllEvent,
-        GroupAllowMemberInviteEvent,
-    ],
+    event: (
+        BotMuteEvent
+        | BotUnmuteEvent
+        | BotLeaveEventKick
+        | BotLeaveEventDisband
+        | GroupNameChangeEvent
+        | GroupEntranceAnnouncementChangeEvent
+        | GroupMuteAllEvent
+        | GroupAllowMemberInviteEvent
+    ),
 ):
     self_info = await bot.get_bot_profile()
     if not event.operator:
@@ -401,7 +396,7 @@ async def _(
 
 @fetcher.supply
 async def _(
-    bot: Bot, event: Union[FriendAddEvent, FriendDeleteEvent, FriendInputStatusChangedEvent, FriendNickChangedEvent]
+    bot: Bot, event: FriendAddEvent | FriendDeleteEvent | FriendInputStatusChangedEvent | FriendNickChangedEvent
 ):
     return {
         "user_id": str(event.friend.id),
@@ -584,16 +579,16 @@ async def _(bot: Bot, event: MemberJoinEvent):
 @fetcher.supply
 async def _(
     bot: Bot,
-    event: Union[
-        MemberLeaveEventKick,
-        MemberLeaveEventQuit,
-        MemberCardChangeEvent,
-        MemberSpecialTitleChangeEvent,
-        MemberPermissionChangeEvent,
-        MemberMuteEvent,
-        MemberUnmuteEvent,
-        MemberHonorChangeEvent,
-    ],
+    event: (
+        MemberLeaveEventKick
+        | MemberLeaveEventQuit
+        | MemberCardChangeEvent
+        | MemberSpecialTitleChangeEvent
+        | MemberPermissionChangeEvent
+        | MemberMuteEvent
+        | MemberUnmuteEvent
+        | MemberHonorChangeEvent
+    ),
 ):
     try:
         member_info = await bot.get_member_profile(group=event.group.id, member=event.member.id)
@@ -645,7 +640,7 @@ async def _(bot: Bot, event: NewFriendRequestEvent):
 
 
 @fetcher.supply
-async def _(bot: Bot, event: Union[MemberJoinRequestEvent, BotInvitedJoinGroupRequestEvent]):
+async def _(bot: Bot, event: MemberJoinRequestEvent | BotInvitedJoinGroupRequestEvent):
     return {
         "group_id": str(event.source_group),
         "group_name": event.group_name,

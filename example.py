@@ -1,5 +1,6 @@
-from nonebot import on_command
+from nonebot import on_command, require
 
+require("nonebot_plugin_uninfo")
 from nonebot_plugin_uninfo import QryItrface, Uninfo
 from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
 

@@ -1,4 +1,4 @@
-from typing import Annotated, Optional
+from typing import Annotated
 
 from nonebot.adapters import Bot
 from nonebot.params import Depends
@@ -36,7 +36,7 @@ class Interface:
     def basic_info(self):
         return self.fetcher.supply_self(self.bot)
 
-    async def get_user(self, user_id: str) -> Optional[User]:
+    async def get_user(self, user_id: str) -> User | None:
         """根据用户id获取用户信息
 
         若适配器不支持该方法，则
@@ -57,8 +57,8 @@ class Interface:
                 return user
 
     async def get_scene(
-        self, scene_type: SceneType, scene_id: str, *, parent_scene_id: Optional[str] = None
-    ) -> Optional[Scene]:
+        self, scene_type: SceneType, scene_id: str, *, parent_scene_id: str | None = None
+    ) -> Scene | None:
         """根据场景类型和场景id获取场景信息
 
         若适配器不支持该方法，则
@@ -80,7 +80,7 @@ class Interface:
             if scene.type == scene_type and scene.id == scene_id:
                 return scene
 
-    async def get_member(self, scene_type: SceneType, scene_id: str, user_id: str) -> Optional[Member]:
+    async def get_member(self, scene_type: SceneType, scene_id: str, user_id: str) -> Member | None:
         """根据场景类型、场景id和用户id获取成员信息
 
         若适配器不支持该方法，则
@@ -110,7 +110,7 @@ class Interface:
         return ans
 
     async def get_scenes(
-        self, scene_type: Optional[SceneType] = None, *, parent_scene_id: Optional[str] = None
+        self, scene_type: SceneType | None = None, *, parent_scene_id: str | None = None
     ) -> list[Scene]:
         """获取所有场景信息
 
@@ -143,7 +143,7 @@ class Interface:
         except NotImplementedError:
             return
 
-    async def iter_scenes(self, scene_type: Optional[SceneType] = None, *, parent_scene_id: Optional[str] = None):
+    async def iter_scenes(self, scene_type: SceneType | None = None, *, parent_scene_id: str | None = None):
         """查询所有场景信息的迭代方法
 
         Args:

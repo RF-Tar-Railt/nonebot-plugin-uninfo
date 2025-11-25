@@ -1,5 +1,3 @@
-from typing import Optional
-
 from nonebot.adapters.console import Bot
 from nonebot.adapters.console.event import Event
 from nonechat.model import DIRECT
@@ -33,7 +31,7 @@ class InfoFetcher(BaseInfoFetcher):
             avatar=f"https://emoji.aranja.com/static/emoji-data/img-apple-160/{ord(data['avatar']):x}.png",
         )
 
-    def extract_member(self, data, user: Optional[User]):
+    def extract_member(self, data, user: User | None):
         if user is None:
             user = self.extract_user(data)
         return Member(user, user.name)
@@ -55,9 +53,7 @@ class InfoFetcher(BaseInfoFetcher):
         except Exception:
             return User(user_id)
 
-    async def query_scene(
-        self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: Optional[str] = None
-    ):
+    async def query_scene(self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: str | None = None):
         if scene_type == SceneType.PRIVATE:
             if user := await self.query_user(bot, scene_id):
                 return Scene(id=f"private:{user.id}", type=SceneType.PRIVATE, name=user.name, avatar=user.avatar)
@@ -84,9 +80,7 @@ class InfoFetcher(BaseInfoFetcher):
                 avatar=f"https://emoji.aranja.com/static/emoji-data/img-apple-160/{ord(user.avatar):x}.png",
             )
 
-    async def query_scenes(
-        self, bot: Bot, scene_type: Optional[SceneType] = None, *, parent_scene_id: Optional[str] = None
-    ):
+    async def query_scenes(self, bot: Bot, scene_type: SceneType | None = None, *, parent_scene_id: str | None = None):
         if scene_type is None or scene_type == SceneType.PRIVATE:
             for user in await bot.list_users():
                 yield Scene(

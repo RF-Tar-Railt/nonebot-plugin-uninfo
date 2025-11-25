@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-from typing import Optional, Union
 
 from nonebot.adapters.onebot.v11 import Bot
 from nonebot.adapters.onebot.v11.event import (
@@ -73,7 +72,7 @@ class InfoFetcher(BaseInfoFetcher):
             avatar=f"https://p.qlogo.cn/gh/{data['group_id']}/{data['group_id']}/",
         )
 
-    def extract_member(self, data, user: Optional[User]):
+    def extract_member(self, data, user: User | None):
         if "group_id" not in data:
             return None
         if user:
@@ -118,9 +117,7 @@ class InfoFetcher(BaseInfoFetcher):
         }
         return self.extract_user(data)
 
-    async def query_scene(
-        self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: Optional[str] = None
-    ):
+    async def query_scene(self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: str | None = None):
         if scene_type == SceneType.PRIVATE:
             if user := (await self.query_user(bot, scene_id)):
                 data = {
@@ -165,9 +162,7 @@ class InfoFetcher(BaseInfoFetcher):
             }
             yield self.extract_user(data)
 
-    async def query_scenes(
-        self, bot: Bot, scene_type: Optional[SceneType] = None, *, parent_scene_id: Optional[str] = None
-    ):
+    async def query_scenes(self, bot: Bot, scene_type: SceneType | None = None, *, parent_scene_id: str | None = None):
         if scene_type is None or scene_type == SceneType.PRIVATE:
             async for user in self.query_users(bot):
                 data = {
@@ -226,7 +221,7 @@ async def _(bot: Bot, event: PrivateMessageEvent):
 
 
 @fetcher.supply
-async def _(bot: Bot, event: Union[FriendAddNoticeEvent, FriendRecallNoticeEvent, FriendRequestEvent]):
+async def _(bot: Bot, event: FriendAddNoticeEvent | FriendRecallNoticeEvent | FriendRequestEvent):
     async for friend in fetcher.query_users(bot):
         if friend.id == str(event.user_id):
             friend_info = {
@@ -273,12 +268,7 @@ async def _(bot: Bot, event: GroupMessageEvent):
 @fetcher.supply
 async def _(
     bot: Bot,
-    event: Union[
-        GroupUploadNoticeEvent,
-        GroupAdminNoticeEvent,
-        GroupRequestEvent,
-        HonorNotifyEvent,
-    ],
+    event: GroupUploadNoticeEvent | GroupAdminNoticeEvent | GroupRequestEvent | HonorNotifyEvent,
 ):
     try:
         group_info = await bot.get_group_info(group_id=event.group_id)
@@ -369,11 +359,7 @@ async def _(
 @fetcher.supply
 async def _(
     bot: Bot,
-    event: Union[
-        GroupDecreaseNoticeEvent,
-        GroupIncreaseNoticeEvent,
-        GroupRecallNoticeEvent,
-    ],
+    event: GroupDecreaseNoticeEvent | GroupIncreaseNoticeEvent | GroupRecallNoticeEvent,
 ):
     try:
         group_info = await bot.get_group_info(group_id=event.group_id)

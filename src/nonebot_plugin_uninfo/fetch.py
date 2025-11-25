@@ -1,8 +1,9 @@
 from abc import ABCMeta, abstractmethod
 import asyncio
 from collections import defaultdict
-from collections.abc import AsyncGenerator, Awaitable
-from typing import Any, Callable, Optional, TypeVar, Union, get_args, get_origin, get_type_hints
+from collections.abc import AsyncGenerator, Awaitable, Callable
+from types import UnionType
+from typing import Any, TypeVar, Union, get_args, get_origin, get_type_hints
 
 from nonebot import get_plugin_config
 from nonebot.adapters import Bot, Event
@@ -26,11 +27,11 @@ class InfoFetcher(metaclass=ABCMeta):
     def __init__(self, adapter: SupportAdapter):
         self.adapter = adapter
         self.endpoint: dict[type[Event], Callable[[Bot, Event], Awaitable[dict]]] = {}
-        self.wildcard: Optional[Callable[[Bot, Event], Awaitable[dict]]] = None
+        self.wildcard: Callable[[Bot, Event], Awaitable[dict]] | None = None
         self.session_cache: dict[str, Session] = {}
         self._timertasks = []
         self._user_cache: defaultdict[str, dict[str, User]] = defaultdict(dict)
-        self._scene_cache: defaultdict[str, dict[tuple[int, str, Optional[str]], Scene]] = defaultdict(dict)
+        self._scene_cache: defaultdict[str, dict[tuple[int, str, str | None], Scene]] = defaultdict(dict)
         self._member_cache: defaultdict[str, dict[tuple[int, str, str], Member]] = defaultdict(dict)
 
     def clean(self):
@@ -44,7 +45,7 @@ class InfoFetcher(metaclass=ABCMeta):
 
     def supply(self, func: TSupplier) -> TSupplier:
         event_type = get_type_hints(func)["event"]
-        if get_origin(event_type) is Union:
+        if get_origin(event_type) in (Union, UnionType):
             for t in get_args(event_type):
                 self.endpoint[t] = func  # type: ignore
         else:
@@ -64,7 +65,7 @@ class InfoFetcher(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def extract_member(self, data: dict[str, Any], user: Optional[User]) -> Optional[Member]:
+    def extract_member(self, data: dict[str, Any], user: User | None) -> Member | None:
         pass
 
     @abstractmethod
@@ -141,10 +142,10 @@ class InfoFetcher(metaclass=ABCMeta):
         return sess
 
     @abstractmethod
-    async def query_user(self, bot: Bot, user_id: str) -> Optional[User]:
+    async def query_user(self, bot: Bot, user_id: str) -> User | None:
         pass
 
-    async def fetch_user(self, bot: Bot, user_id: str) -> Optional[User]:
+    async def fetch_user(self, bot: Bot, user_id: str) -> User | None:
         if user_id in self._user_cache[bot.self_id]:
             return self._user_cache[bot.self_id][user_id]
         user = await self.query_user(bot, user_id)
@@ -157,13 +158,13 @@ class InfoFetcher(metaclass=ABCMeta):
 
     @abstractmethod
     async def query_scene(
-        self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: Optional[str] = None
-    ) -> Optional[Scene]:
+        self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: str | None = None
+    ) -> Scene | None:
         pass
 
     async def fetch_scene(
-        self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: Optional[str] = None
-    ) -> Optional[Scene]:
+        self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: str | None = None
+    ) -> Scene | None:
         key = (scene_type.value, scene_id, parent_scene_id)
         if key in self._scene_cache[bot.self_id]:
             return self._scene_cache[bot.self_id][key]
@@ -176,14 +177,10 @@ class InfoFetcher(metaclass=ABCMeta):
         return scene
 
     @abstractmethod
-    async def query_member(
-        self, bot: Bot, scene_type: SceneType, parent_scene_id: str, user_id: str
-    ) -> Optional[Member]:
+    async def query_member(self, bot: Bot, scene_type: SceneType, parent_scene_id: str, user_id: str) -> Member | None:
         pass
 
-    async def fetch_member(
-        self, bot: Bot, scene_type: SceneType, parent_scene_id: str, user_id: str
-    ) -> Optional[Member]:
+    async def fetch_member(self, bot: Bot, scene_type: SceneType, parent_scene_id: str, user_id: str) -> Member | None:
         key = (scene_type.value, parent_scene_id, user_id)
         if key in self._member_cache[bot.self_id]:
             return self._member_cache[bot.self_id][key]
@@ -201,7 +198,7 @@ class InfoFetcher(metaclass=ABCMeta):
 
     @abstractmethod
     def query_scenes(
-        self, bot: Bot, scene_type: Optional[SceneType] = None, *, parent_scene_id: Optional[str] = None
+        self, bot: Bot, scene_type: SceneType | None = None, *, parent_scene_id: str | None = None
     ) -> AsyncGenerator[Scene, None]:
         pass
 

@@ -1,5 +1,3 @@
-from typing import Optional
-
 from nonebot.adapters.satori import Bot
 from nonebot.adapters.satori.event import Event
 from nonebot.adapters.satori.models import Channel, ChannelType, Guild
@@ -52,7 +50,7 @@ class InfoFetcher(BaseInfoFetcher):
             avatar=data.get("avatar"),
         )
 
-    def extract_member(self, data, user: Optional[User]):
+    def extract_member(self, data, user: User | None):
         if "member_name" not in data:
             return None
         if user:
@@ -116,9 +114,7 @@ class InfoFetcher(BaseInfoFetcher):
         user = await bot.user_get(user_id=user_id)
         return self._pack_user(user)
 
-    async def query_scene(
-        self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: Optional[str] = None
-    ):
+    async def query_scene(self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: str | None = None):
         if scene_type == SceneType.PRIVATE:
             user = await bot.user_get(user_id=scene_id)
             data = {
@@ -162,9 +158,7 @@ class InfoFetcher(BaseInfoFetcher):
             for friend in friends.data:
                 yield self._pack_user(friend)
 
-    async def query_scenes(
-        self, bot: Bot, scene_type: Optional[SceneType] = None, *, parent_scene_id: Optional[str] = None
-    ):
+    async def query_scenes(self, bot: Bot, scene_type: SceneType | None = None, *, parent_scene_id: str | None = None):
         if scene_type is None or scene_type == SceneType.PRIVATE:
             async for user in self.query_users(bot):
                 data = {

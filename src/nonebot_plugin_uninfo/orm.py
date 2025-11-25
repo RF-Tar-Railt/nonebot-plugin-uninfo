@@ -1,7 +1,5 @@
 import asyncio
 import json
-import sys
-from typing import Optional
 
 from nonebot import get_bots, require
 from nonebot.adapters import Bot
@@ -34,7 +32,7 @@ class BotModel(Model):
     adapter: Mapped[str] = mapped_column(String(32))
     scope: Mapped[str] = mapped_column(String(32))
 
-    def get_bot(self) -> Optional[Bot]:
+    def get_bot(self) -> Bot | None:
         for bot in list(get_bots().values()):
             if bot.self_id == self.self_id and bot.adapter.get_name() == self.adapter:
                 return bot
@@ -53,7 +51,7 @@ class SceneModel(Model):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     bot_persist_id: Mapped[int] = mapped_column(Integer)
-    parent_scene_persist_id: Mapped[Optional[int]] = mapped_column(Integer)
+    parent_scene_persist_id: Mapped[int | None] = mapped_column(Integer)
     scene_id: Mapped[str] = mapped_column(String(64))
     scene_type: Mapped[int] = mapped_column(Integer)
     scene_data: Mapped[dict] = mapped_column(JSON)
@@ -79,7 +77,7 @@ class SceneModel(Model):
             }
         )
 
-    async def query_scene(self) -> Optional[Scene]:
+    async def query_scene(self) -> Scene | None:
         bot_model = await get_bot_model(self.bot_persist_id)
         if not (bot := bot_model.get_bot()):
             return None
@@ -110,7 +108,7 @@ class UserModel(Model):
     async def to_user(self) -> User:
         return User(**{**self.user_data, "id": self.user_id})
 
-    async def query_user(self) -> Optional[User]:
+    async def query_user(self) -> User | None:
         bot_model = await get_bot_model(self.bot_persist_id)
         if not (bot := bot_model.get_bot()):
             return None
@@ -135,7 +133,7 @@ class SessionModel(Model):
     bot_persist_id: Mapped[int] = mapped_column(Integer)
     scene_persist_id: Mapped[int] = mapped_column(Integer)
     user_persist_id: Mapped[int] = mapped_column(Integer)
-    member_data: Mapped[Optional[dict]] = mapped_column(JSON)
+    member_data: Mapped[dict | None] = mapped_column(JSON)
 
     async def to_session(self) -> Session:
         bot_model = await get_bot_model(self.bot_persist_id)
@@ -154,7 +152,7 @@ class SessionModel(Model):
             member=member,
         )
 
-    async def query_session(self) -> Optional[Session]:
+    async def query_session(self) -> Session | None:
         bot_model = await get_bot_model(self.bot_persist_id)
         if not (bot := bot_model.get_bot()):
             return None
@@ -186,7 +184,7 @@ class SessionModel(Model):
         )
 
 
-_insert_mutex: Optional[asyncio.Lock] = None
+_insert_mutex: asyncio.Lock | None = None
 
 
 def _get_insert_mutex():
@@ -195,12 +193,12 @@ def _get_insert_mutex():
 
     if _insert_mutex is None:
         _insert_mutex = asyncio.Lock()
-    elif sys.version_info < (3, 10):
-        # 还需要判断loop是否与之前创建的一致
-        # 单测中不同的test，loop也不一样
-        # 但是nonebot里loop始终是一样的
-        if getattr(_insert_mutex, "_loop") != asyncio.get_running_loop():
-            _insert_mutex = asyncio.Lock()
+    # elif sys.version_info < (3, 10):
+    #     # 还需要判断loop是否与之前创建的一致
+    #     # 单测中不同的test，loop也不一样
+    #     # 但是nonebot里loop始终是一样的
+    #     if getattr(_insert_mutex, "_loop") != asyncio.get_running_loop():
+    #         _insert_mutex = asyncio.Lock()
 
     return _insert_mutex
 

@@ -1,5 +1,3 @@
-from typing import Optional, Union
-
 from nonebot.adapters.qq import Bot
 from nonebot.adapters.qq.event import (
     C2CMessageCreateEvent,
@@ -88,7 +86,7 @@ class InfoFetcher(BaseInfoFetcher):
             avatar=data["avatar"],
         )
 
-    def extract_member(self, data, user: Optional[User]):
+    def extract_member(self, data, user: User | None):
         if "group_id" in data:
             if user:
                 return Member(user, nick=data["nickname"])
@@ -129,9 +127,7 @@ class InfoFetcher(BaseInfoFetcher):
             avatar=f"https://q.qlogo.cn/qqapp/{bot.bot_info.id}/{user_id}/100",
         )
 
-    async def query_scene(
-        self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: Optional[str] = None
-    ):
+    async def query_scene(self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: str | None = None):
         if scene_type == SceneType.GUILD:
             guild = await bot.get_guild(guild_id=scene_id)
             return Scene(id=guild.id, type=SceneType.GUILD, name=guild.name, avatar=guild.icon)
@@ -172,9 +168,7 @@ class InfoFetcher(BaseInfoFetcher):
     def query_users(self, bot: Bot):
         raise NotImplementedError
 
-    async def query_scenes(
-        self, bot: Bot, scene_type: Optional[SceneType] = None, *, parent_scene_id: Optional[str] = None
-    ):
+    async def query_scenes(self, bot: Bot, scene_type: SceneType | None = None, *, parent_scene_id: str | None = None):
         if scene_type is not None and scene_type < SceneType.GUILD:
             return
 
@@ -213,7 +207,7 @@ class InfoFetcher(BaseInfoFetcher):
 fetcher = InfoFetcher(SupportAdapter.qq)
 
 
-async def _handle_role(bot: Bot, guild_id: str, channel_id: Union[str, None], roles: list[str]):
+async def _handle_role(bot: Bot, guild_id: str, channel_id: str | None, roles: list[str]):
     if not roles:
         return Role(*ROLES["1"])
     res = []

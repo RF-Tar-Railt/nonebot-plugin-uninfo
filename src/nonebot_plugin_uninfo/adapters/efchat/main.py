@@ -1,5 +1,3 @@
-from typing import Optional
-
 from nonebot.adapters.efchat import Bot
 from nonebot.adapters.efchat.event import (
     ChannelMessageEvent,
@@ -26,7 +24,7 @@ class InfoFetcher(BaseInfoFetcher):
             )
         return Scene(id=data["user_id"], type=SceneType.PRIVATE, name=data["user_id"], avatar=data.get("head", None))
 
-    def extract_member(self, data, user: Optional[User]):
+    def extract_member(self, data, user: User | None):
         if user is None:
             user = self.extract_user(data)
         return Member(user, user.name)
@@ -34,9 +32,7 @@ class InfoFetcher(BaseInfoFetcher):
     async def query_user(self, bot: Bot, user_id: str):
         return User(user_id, user_id)
 
-    async def query_scene(
-        self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: Optional[str] = None
-    ):
+    async def query_scene(self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: str | None = None):
         return Scene(id=scene_id, type=scene_type, name=scene_id, avatar=None)
 
     async def query_member(self, bot: Bot, scene_type: SceneType, parent_scene_id: str, user_id: str):
@@ -45,7 +41,7 @@ class InfoFetcher(BaseInfoFetcher):
     def query_users(self, bot: Bot):
         raise NotImplementedError
 
-    def query_scenes(self, bot: Bot, scene_type: Optional[SceneType] = None, *, parent_scene_id: Optional[str] = None):
+    def query_scenes(self, bot: Bot, scene_type: SceneType | None = None, *, parent_scene_id: str | None = None):
         raise NotImplementedError
 
     def query_members(self, bot: Bot, scene_type: SceneType, parent_scene_id: str):

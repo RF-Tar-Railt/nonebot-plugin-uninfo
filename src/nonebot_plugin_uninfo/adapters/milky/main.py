@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional, Union
 
 from nonebot.adapters.milky import Bot
 from nonebot.adapters.milky.event import (
@@ -64,7 +63,7 @@ class InfoFetcher(BaseInfoFetcher):
             avatar=f"https://p.qlogo.cn/gh/{data['group_id']}/{data['group_id']}/",
         )
 
-    def extract_member(self, data, user: Optional[User]):
+    def extract_member(self, data, user: User | None):
         if "group_id" not in data:
             return None
         if user:
@@ -108,9 +107,7 @@ class InfoFetcher(BaseInfoFetcher):
             }
         return self.extract_user(data)
 
-    async def query_scene(
-        self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: Optional[str] = None
-    ):
+    async def query_scene(self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: str | None = None):
         if scene_type == SceneType.PRIVATE:
             if user := (await self.query_user(bot, scene_id)):
                 data = {
@@ -153,9 +150,7 @@ class InfoFetcher(BaseInfoFetcher):
             }
             yield self.extract_user(data)
 
-    async def query_scenes(
-        self, bot: Bot, scene_type: Optional[SceneType] = None, *, parent_scene_id: Optional[str] = None
-    ):
+    async def query_scenes(self, bot: Bot, scene_type: SceneType | None = None, *, parent_scene_id: str | None = None):
         if scene_type is None or scene_type == SceneType.PRIVATE:
             async for user in self.query_users(bot):
                 data = {
@@ -204,7 +199,7 @@ fetcher = InfoFetcher(SupportAdapter.milky)
 
 
 @fetcher.supply
-async def _(bot: Bot, event: Union[MessageEvent, GroupMessageEvent, FriendMessageEvent, TempMessageEvent]):
+async def _(bot: Bot, event: MessageEvent | GroupMessageEvent | FriendMessageEvent | TempMessageEvent):
     if event.data.message_scene == "friend":
         assert event.data.friend
         return {
@@ -426,7 +421,7 @@ async def _(bot: Bot, event: GroupInvitationEvent):
 
 
 @fetcher.supply
-async def _(bot: Bot, event: Union[GroupMemberIncreaseEvent, GroupMemberDecreaseEvent, GroupMuteEvent]):
+async def _(bot: Bot, event: GroupMemberIncreaseEvent | GroupMemberDecreaseEvent | GroupMuteEvent):
     try:
         user = await bot.get_group_member_info(group_id=event.data.group_id, user_id=event.data.user_id)
         base: dict = {

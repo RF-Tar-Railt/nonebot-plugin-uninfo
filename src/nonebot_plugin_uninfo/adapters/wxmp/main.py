@@ -1,5 +1,3 @@
-from typing import Optional
-
 from nonebot.adapters.wxmp import Bot
 from nonebot.adapters.wxmp.event import Event
 
@@ -21,15 +19,13 @@ class InfoFetcher(BaseInfoFetcher):
             type=SceneType.PRIVATE,
         )
 
-    def extract_member(self, data, user: Optional[User]):
+    def extract_member(self, data, user: User | None):
         return None
 
     async def query_user(self, bot: Bot, user_id: str):
         raise NotImplementedError
 
-    async def query_scene(
-        self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: Optional[str] = None
-    ):
+    async def query_scene(self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: str | None = None):
         raise NotImplementedError
 
     async def query_member(self, bot: Bot, scene_type: SceneType, parent_scene_id: str, user_id: str):
@@ -38,7 +34,7 @@ class InfoFetcher(BaseInfoFetcher):
     def query_users(self, bot: Bot):
         raise NotImplementedError
 
-    def query_scenes(self, bot: Bot, scene_type: Optional[SceneType] = None, *, parent_scene_id: Optional[str] = None):
+    def query_scenes(self, bot: Bot, scene_type: SceneType | None = None, *, parent_scene_id: str | None = None):
         raise NotImplementedError
 
     def query_members(self, bot: Bot, scene_type: SceneType, parent_scene_id: str):

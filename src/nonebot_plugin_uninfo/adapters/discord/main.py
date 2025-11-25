@@ -1,5 +1,4 @@
 from datetime import timedelta
-from typing import Optional, Union
 
 from nonebot.adapters.discord import Bot
 from nonebot.adapters.discord.api.model import Channel as DiscordChannel
@@ -127,7 +126,7 @@ class InfoFetcher(BaseInfoFetcher):
             avatar=avatar_url(data["user_id"], data.get("avatar") or ""),
         )
 
-    def extract_member(self, data, user: Optional[User]):
+    def extract_member(self, data, user: User | None):
         if "guild_id" in data or "channel_id" in data:
             if user:
                 return Member(user, nick=data["nickname"], role=data.get("role"), joined_at=data.get("joined_at"))
@@ -155,9 +154,7 @@ class InfoFetcher(BaseInfoFetcher):
         }
         return self.extract_user(data)
 
-    async def query_scene(
-        self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: Optional[str] = None
-    ):
+    async def query_scene(self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: str | None = None):
         if scene_type == SceneType.PRIVATE:
             user = await bot.get_user(user_id=int(scene_id))
             return self.extract_scene(
@@ -210,9 +207,7 @@ class InfoFetcher(BaseInfoFetcher):
     def query_users(self, bot: Bot):
         raise NotImplementedError
 
-    async def query_scenes(
-        self, bot: Bot, scene_type: Optional[SceneType] = None, *, parent_scene_id: Optional[str] = None
-    ):
+    async def query_scenes(self, bot: Bot, scene_type: SceneType | None = None, *, parent_scene_id: str | None = None):
         if scene_type in (SceneType.PRIVATE, SceneType.GROUP):
             return
 
@@ -323,7 +318,7 @@ async def _(bot: Bot, event: InteractionCreateEvent):
 @fetcher.supply
 async def _(
     bot: Bot,
-    event: Union[DirectMessageCreateEvent, GuildMessageCreateEvent, DirectMessageUpdateEvent, GuildMessageUpdateEvent],
+    event: DirectMessageCreateEvent | GuildMessageCreateEvent | DirectMessageUpdateEvent | GuildMessageUpdateEvent,
 ):
     base = {
         "user_id": str(event.author.id),
@@ -364,16 +359,16 @@ async def _(
 @fetcher.supply
 async def _(
     bot: Bot,
-    event: Union[
-        DirectMessageDeleteEvent,
-        DirectMessageDeleteBulkEvent,
-        GuildMessageDeleteEvent,
-        GuildMessageDeleteBulkEvent,
-        GuildMessageReactionRemoveAllEvent,
-        DirectMessageReactionRemoveAllEvent,
-        DirectMessageReactionRemoveEmojiEvent,
-        GuildMessageReactionRemoveEmojiEvent,
-    ],
+    event: (
+        DirectMessageDeleteEvent
+        | DirectMessageDeleteBulkEvent
+        | GuildMessageDeleteEvent
+        | GuildMessageDeleteBulkEvent
+        | GuildMessageReactionRemoveAllEvent
+        | DirectMessageReactionRemoveAllEvent
+        | DirectMessageReactionRemoveEmojiEvent
+        | GuildMessageReactionRemoveEmojiEvent
+    ),
 ):
     self_info = await bot.get_current_user()
     base = {
@@ -402,12 +397,12 @@ async def _(
 @fetcher.supply
 async def _(
     bot: Bot,
-    event: Union[
-        DirectMessageReactionAddEvent,
-        DirectMessageReactionRemoveEvent,
-        GuildMessageReactionAddEvent,
-        GuildMessageReactionRemoveEvent,
-    ],
+    event: (
+        DirectMessageReactionAddEvent
+        | DirectMessageReactionRemoveEvent
+        | GuildMessageReactionAddEvent
+        | GuildMessageReactionRemoveEvent
+    ),
 ):
     user = await bot.get_user(user_id=event.user_id)
     base = {

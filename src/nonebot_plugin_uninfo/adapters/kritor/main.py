@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-from typing import Optional, Union
 
 from nonebot.adapters.kritor import Bot
 from nonebot.adapters.kritor.event import (
@@ -80,7 +79,7 @@ class InfoFetcher(BaseInfoFetcher):
             avatar=f"http://q1.qlogo.cn/g?b=qq&nk={data['user_id']}&s=640",
         )
 
-    def extract_member(self, data, user: Optional[User]):
+    def extract_member(self, data, user: User | None):
         if "group_id" not in data or "guild_id" not in data:
             return None
         if user:
@@ -128,9 +127,7 @@ class InfoFetcher(BaseInfoFetcher):
             }
         return self.extract_user(data)
 
-    async def query_scene(
-        self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: Optional[str] = None
-    ):
+    async def query_scene(self, bot: Bot, scene_type: SceneType, scene_id: str, *, parent_scene_id: str | None = None):
         if scene_type == SceneType.GROUP:
             group = await bot.get_group_info(group=scene_id)
             return self.extract_scene(
@@ -186,9 +183,7 @@ class InfoFetcher(BaseInfoFetcher):
             }
             yield self.extract_user(data)
 
-    async def query_scenes(
-        self, bot: Bot, scene_type: Optional[SceneType] = None, *, parent_scene_id: Optional[str] = None
-    ):
+    async def query_scenes(self, bot: Bot, scene_type: SceneType | None = None, *, parent_scene_id: str | None = None):
         if scene_type is None or scene_type == SceneType.PRIVATE:
             async for user in self.query_users(bot):
                 yield self.extract_scene(
@@ -351,7 +346,7 @@ async def _(bot: Bot, event: GroupMessage):
 
 
 @fetcher.supply
-async def _(bot: Bot, event: Union[StrangerMessage, NearbyMessage]):
+async def _(bot: Bot, event: StrangerMessage | NearbyMessage):
     try:
         user_info = await bot.get_stranger_profile_card(targets=[event.sender.uin])
         remark = user_info.strangers_profile_card[0].remark
