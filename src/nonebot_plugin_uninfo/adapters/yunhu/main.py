@@ -2,16 +2,22 @@ from typing import Any
 
 from nonebot.adapters.yunhu import Bot
 from nonebot.adapters.yunhu.event import (
-    GroupMessageEvent,
     PrivateMessageEvent,
+    GroupMessageEvent,
+    GroupJoinNoticeEvent,
+    GroupLeaveNoticeEvent,
+    BotFollowedNoticeEvent,
+    BotUnfollowedNoticeEvent,
+    TipNoticeEvent,
+    ButtonReportNoticeEvent,
 )
-from nonebot.adapters.yunhu.models import Sender
 
 from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
 from nonebot_plugin_uninfo.fetch import BasicInfo
 from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
 from nonebot_plugin_uninfo.model import Member, Role, Scene, SceneType, User
 from nonebot.compat import model_dump
+from nonebot.exception import ActionFailed
 
 ROLES = {
     "owner": ("OWNER", 100),
@@ -30,14 +36,14 @@ class InfoFetcher(BaseInfoFetcher):
         )
 
     def extract_scene(self, data):
-        if "userId" in data:
-            return Scene(id=data["userId"], type=SceneType.PRIVATE, name=data["nickname"], avatar=data["avatarUrl"])
-        return Scene(
-            id=data["groupId"],
-            name=data["name"],
-            type=SceneType.GROUP,
-            avatar=data["avatarUrl"],
-        )
+        if "groupId" in data and data["groupId"]:
+            return Scene(
+                id=data["groupId"],
+                type=SceneType.GROUP,
+                name=data["name"],
+                avatar=data["groupAvatarUrl"] if "groupAvatarUrl" in data else data["avatarUrl"],
+            )
+        return Scene(id=data["userId"], type=SceneType.PRIVATE, name=data["nickname"], avatar=data["avatarUrl"])
 
     def extract_member(self, data: dict[str, Any], user: User | None) -> Member | None:
         if user:
@@ -55,16 +61,15 @@ class InfoFetcher(BaseInfoFetcher):
         if scene_type == SceneType.PRIVATE:
             if user := await self.query_user(bot, scene_id):
                 data = {
-                    "user_id": user.id,
-                    "name": user.name,
-                    "avatar": user.avatar,
+                    "userId": user.id,
+                    "nickname": user.name,
+                    "avatarUrl": user.avatar,
                 }
                 return self.extract_scene(data)
-
         elif scene_type == SceneType.GROUP:
             chat = await bot.get_group_info(scene_id)
-            if g := chat.data:
-                return self.extract_scene(model_dump(g.group))
+            if chat.data:
+                return self.extract_scene(model_dump(chat.data.group))
 
     async def query_member(self, bot: Bot, scene_type: SceneType, parent_scene_id: str, user_id: str):
         if scene_type == SceneType.GROUP:
@@ -92,20 +97,127 @@ class InfoFetcher(BaseInfoFetcher):
 fetcher = InfoFetcher(SupportAdapter.yunhu)
 
 
-async def _supply_userdata(sender: Sender):
+@fetcher.supply
+async def _(bot: Bot, event: PrivateMessageEvent):
     return {
-        "user_id": sender.senderId,
-        "name": sender.senderNickname,
-        "avatai": sender.senderAvatarUrl,
-        "role": sender.senderUserLevel,
+        "userId": event.event.sender.senderId,
+        "nickname": event.event.sender.senderNickname,
+        "avatarUrl": event.event.sender.senderAvatarUrl,
     }
 
 
 @fetcher.supply
-async def _(bot: Bot, event: PrivateMessageEvent):
-    return await _supply_userdata(event.event.sender)
+async def _(bot: Bot, event: GroupMessageEvent):
+    try:
+        group = await bot.get_group_info(event.event.chat.chatId)
+        if g := group.data:
+            group_info = {
+                "name": g.group.name,
+                "groupAvatarUrl": g.group.avatarUrl,
+            }
+        else:
+            group_info = {}
+    except ActionFailed:
+        group_info = {}
+    return {
+        "userId": event.event.sender.senderId,
+        "nickname": event.event.sender.senderNickname,
+        "avatarUrl": event.event.sender.senderAvatarUrl,
+        "role": event.event.sender.senderUserLevel,
+        "groupId": event.event.chat.chatId,
+        "name": group_info.get("name"),
+        "groupAvatarUrl": group_info.get("groupAvatarUrl"),
+    }
 
 
 @fetcher.supply
-async def _(bot: Bot, event: GroupMessageEvent):
-    return await _supply_userdata(event.event.sender)
+async def _(bot: Bot, event: BotFollowedNoticeEvent | BotUnfollowedNoticeEvent):
+    return {
+        "userId": event.event.userId,
+        "nickname": event.event.nickname,
+        "avatarUrl": event.event.avatarUrl,
+    }
+
+
+@fetcher.supply
+async def _(bot: Bot, event: GroupJoinNoticeEvent | GroupLeaveNoticeEvent):
+    try:
+        group = await bot.get_group_info(event.event.chatId)
+        if g := group.data:
+            group_info = {
+                "name": g.group.name,
+                "groupAvatarUrl": g.group.avatarUrl,
+            }
+        else:
+            group_info = {}
+    except ActionFailed:
+        group_info = {}
+    return {
+        "userId": event.event.userId,
+        "nickname": event.event.nickname,
+        "avatarUrl": event.event.avatarUrl,
+        "groupId": event.event.chatId,
+        "name": group_info.get("name"),
+        "groupAvatarUrl": group_info.get("groupAvatarUrl"),
+    }
+
+
+@fetcher.supply
+async def _(bot: Bot, event: TipNoticeEvent):
+    try:
+        group = await bot.get_group_info(event.event.chatId)
+        if g := group.data:
+            group_info = {
+                "name": g.group.name,
+                "groupAvatarUrl": g.group.avatarUrl,
+            }
+        else:
+            group_info = {}
+    except ActionFailed:
+        group_info = {}
+    return {
+        "userId": event.event.userId,
+        "nickname": event.event.sender.senderNickname,
+        "avatarUrl": event.event.sender.senderAvatarUrl,
+        "groupId": event.event.chatId,
+        "name": group_info.get("name"),
+        "groupAvatarUrl": group_info.get("groupAvatarUrl"),
+    }
+
+
+@fetcher.supply
+async def _(bot: Bot, event: ButtonReportNoticeEvent):
+    try:
+        if event.event.chatType == "group":
+            group = await bot.get_group_info(event.event.chatId)
+            if g := group.data:
+                group_info = {
+                    "name": g.group.name,
+                    "groupAvatarUrl": g.group.avatarUrl,
+                    "groupId": event.event.chatId,
+                }
+            else:
+                group_info = {}
+        else:
+            group_info = {}
+    except ActionFailed:
+        group_info = {}
+    try:
+        user = await bot.get_user_info(event.event.userId)
+        if u := user.data:
+            user_info = {
+                "nickname": u.user.nickname,
+                "avatarUrl": u.user.avatarUrl,
+            }
+        else:
+            user_info = {}
+    except ActionFailed:
+        user_info = {}
+    return {
+        "userId": event.event.userId,
+        "nickname": user_info.get("nickname"),
+        "avatarUrl": user_info.get("avatarUrl"),
+        "groupId": group_info.get("groupId"),
+        "name": group_info.get("name"),
+        "groupAvatarUrl": group_info.get("groupAvatarUrl"),
+    }
