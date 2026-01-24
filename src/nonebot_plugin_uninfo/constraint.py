@@ -36,6 +36,7 @@ class SupportAdapter(StrEnum):
     telegram = "Telegram"
     # tail_chat = "Tailchat"  # TODO: Add tailchat support
     wxmp = "WXMP"
+    yunhu = "YunHu"
 
     nonebug = "fake"
 
@@ -71,6 +72,8 @@ class SupportScope(StrEnum):
     """EFChat平台"""
     bililive = "BiliLive"
     """Bilibili直播平台"""
+    yunhu = "YunHu"
+    """云湖平台"""
 
     onebot12_other = "Onebot12"
     """ob12 的其他平台"""
@@ -112,6 +115,7 @@ class SupportScope(StrEnum):
             "kook": SupportScope.kook,
             "dingtalk": SupportScope.ding,
             "mail": SupportScope.mail,
+            "yunhu": SupportScope.yunhu,
         }.get(platform, SupportScope.satori_other)
 
 
@@ -136,5 +140,6 @@ class SupportAdapterModule(str, Enum):
     qq = "nonebot.adapters.qq"
     satori = "nonebot.adapters.satori"
     telegram = "nonebot.adapters.telegram"
+    yunhu = "nonebot.adapters.yunhu"
     # tail_chat = "nonebot_adapter_tailchat"  # TODO: Add tailchat support
     wxmp = "nonebot.adapters.wxmp"
