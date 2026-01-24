@@ -4,6 +4,7 @@ from nonebot.adapters.yunhu import Bot
 from nonebot.adapters.yunhu.event import (
     PrivateMessageEvent,
     GroupMessageEvent,
+    InstructionMessageEvent,
     GroupJoinNoticeEvent,
     GroupLeaveNoticeEvent,
     BotFollowedNoticeEvent,
@@ -125,6 +126,33 @@ async def _(bot: Bot, event: GroupMessageEvent):
         "avatarUrl": event.event.sender.senderAvatarUrl,
         "role": event.event.sender.senderUserLevel,
         "groupId": event.event.chat.chatId,
+        "name": group_info.get("name"),
+        "groupAvatarUrl": group_info.get("groupAvatarUrl"),
+    }
+
+
+@fetcher.supply
+async def _(bot: Bot, event: InstructionMessageEvent):
+    try:
+        if event.event.chat.chatType == "group":
+            group = await bot.get_group_info(event.event.chat.chatId)
+            if g := group.data:
+                group_info = {
+                    "name": g.group.name,
+                    "groupAvatarUrl": g.group.avatarUrl,
+                    "groupId": event.event.chat.chatId,
+                }
+            else:
+                group_info = {}
+        else:
+            group_info = {}
+    except ActionFailed:
+        group_info = {}
+    return {
+        "userId": event.event.sender.senderId,
+        "nickname": event.event.sender.senderNickname,
+        "avatarUrl": event.event.sender.senderAvatarUrl,
+        "groupId": group_info.get("groupId"),
         "name": group_info.get("name"),
         "groupAvatarUrl": group_info.get("groupAvatarUrl"),
     }
