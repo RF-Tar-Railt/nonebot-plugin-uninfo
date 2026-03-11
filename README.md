@@ -172,6 +172,8 @@ async def inspect(session: Uninfo):
 - [ ] heybox
 - [x] Milky
 - [x] EFChat
+- [x] Yuhun
+- [x] Bililive
 
 ## 相关插件
 

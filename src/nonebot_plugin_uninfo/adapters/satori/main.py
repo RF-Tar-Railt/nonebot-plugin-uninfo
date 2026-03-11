@@ -1,6 +1,6 @@
 from nonebot.adapters.satori import Bot
 from nonebot.adapters.satori.event import Event
-from nonebot.adapters.satori.models import Channel, ChannelType, Guild
+from nonebot.adapters.satori.models import Channel, ChannelType, Guild, Friend
 from nonebot.adapters.satori.models import User as SatoriUser
 
 from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
@@ -78,12 +78,20 @@ class InfoFetcher(BaseInfoFetcher):
             joined_at=data["joined_at"],
         )
 
-    def _pack_user(self, user: SatoriUser):
-        data = {
-            "user_id": user.id,
-            "name": user.name,
-            "nickname": user.nick,
-            "avatar": user.avatar,
+    def _pack_user(self, user: SatoriUser | Friend):
+        if isinstance(user, Friend):
+            data = {
+                "user_id": user.user.id,
+                "name": user.user.name,
+                "nickname": user.nick,
+                "avatar": user.user.avatar,
+            }
+        else:
+            data = {
+                "user_id": user.id,
+                "name": user.name,
+                "nickname": user.nick,
+                "avatar": user.avatar,
         }
         return self.extract_user(data)
 
@@ -157,7 +165,6 @@ class InfoFetcher(BaseInfoFetcher):
             friends = await bot.friend_list(next_token=friends.next)
             for friend in friends.data:
                 yield self._pack_user(friend)
-
     async def query_scenes(self, bot: Bot, scene_type: SceneType | None = None, *, parent_scene_id: str | None = None):
         if scene_type is None or scene_type == SceneType.PRIVATE:
             async for user in self.query_users(bot):
