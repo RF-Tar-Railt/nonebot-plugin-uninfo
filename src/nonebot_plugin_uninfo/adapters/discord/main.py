@@ -1,11 +1,11 @@
 from datetime import timedelta
 
-from nonebot.adapters.discord import Bot
+from nonebot.adapters.discord import Bot, is_not_unset, is_unset
 from nonebot.adapters.discord.api.model import Channel as DiscordChannel
 from nonebot.adapters.discord.api.model import GuildMember, Snowflake
 from nonebot.adapters.discord.api.model import User as DiscordUser
-from nonebot.adapters.discord.api.types import ChannelType as DiscordChannelType
 from nonebot.adapters.discord.api.types import UNSET
+from nonebot.adapters.discord.api.types import ChannelType as DiscordChannelType
 from nonebot.adapters.discord.event import (
     ChannelCreateEvent,
     ChannelDeleteEvent,
@@ -230,8 +230,10 @@ class InfoFetcher(BaseInfoFetcher):
                         yield Scene(
                             id=str(channel.id),
                             type=CHANNEL_TYPE.get(channel.type, SceneType.CHANNEL_TEXT),
-                            name=channel.name,
-                            avatar=avatar_url(str(channel.id), channel.icon or ""),
+                            name=(channel.name if is_not_unset(channel.name) else None),
+                            avatar=avatar_url(str(channel.id), channel.icon)
+                            if is_not_unset(channel.icon) and channel.icon is not None
+                            else None,
                             parent=_guild,
                         )
             if len(guilds) < 100:
@@ -261,6 +263,8 @@ class InfoFetcher(BaseInfoFetcher):
                 )
             if len(members) < 100:
                 break
+            if is_unset(members[-1].user):
+                raise ValueError("Discord member payload is missing user")
             members = await bot.list_guild_members(guild_id=int(guild_id), limit=100, after=members[-1].user.id)
 
     def supply_self(self, bot) -> BasicInfo:
@@ -284,9 +288,14 @@ async def _(bot: Bot, event: InteractionCreateEvent):
             "avatar": event.user.avatar,
         }
         return base
-    assert isinstance(event.member, GuildMember)
-    assert isinstance(event.guild_id, int)
-    assert isinstance(event.channel_id, int)
+    if is_unset(event.member):
+        raise ValueError("Discord interaction payload is missing member")
+    if is_unset(event.guild_id):
+        raise ValueError("Discord interaction payload is missing guild_id")
+    if is_unset(event.channel_id):
+        raise ValueError("Discord interaction payload is missing channel_id")
+    if is_unset(event.member.user):
+        raise ValueError("Discord interaction member payload is missing user")
     guild_info = await bot.get_guild(guild_id=event.guild_id)
     base = {
         "user_id": str(event.member.user.id),
@@ -320,6 +329,8 @@ async def _(
     bot: Bot,
     event: DirectMessageCreateEvent | GuildMessageCreateEvent | DirectMessageUpdateEvent | GuildMessageUpdateEvent,
 ):
+    if is_unset(event.author):
+        raise ValueError("Discord message payload is missing author")
     base = {
         "user_id": str(event.author.id),
         "name": event.author.username,
@@ -499,6 +510,8 @@ async def _(bot: Bot, event: Event):
         }
         return base
     if isinstance(event, GuildMemberAddEvent):
+        if is_unset(event.user):
+            raise ValueError("Discord guild member add payload is missing user")
         base = {
             "user_id": str(event.user.id),
             "name": event.user.username,
