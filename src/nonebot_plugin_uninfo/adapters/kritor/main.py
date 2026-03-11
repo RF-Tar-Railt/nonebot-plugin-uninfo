@@ -92,7 +92,7 @@ class InfoFetcher(BaseInfoFetcher):
                     else None
                 ),
                 joined_at=datetime.fromtimestamp(data["join_time"]) if "join_time" in data else None,
-                role=Role(*ROLES[data["role"]], data["role"]) if "role" in data else None,
+                roles=[Role(*ROLES[data["role"]], data["role"])] if "role" in data else [],
             )
         return Member(
             User(
@@ -108,7 +108,7 @@ class InfoFetcher(BaseInfoFetcher):
                 else None
             ),
             joined_at=datetime.fromtimestamp(data["join_time"]) if "join_time" in data else None,
-            role=Role(*ROLES[data["role"]], data["role"]) if "role" in data else None,
+            roles=[Role(*ROLES[data["role"]], data["role"])] if "role" in data else [],
         )
 
     async def query_user(self, bot: Bot, user_id: str):

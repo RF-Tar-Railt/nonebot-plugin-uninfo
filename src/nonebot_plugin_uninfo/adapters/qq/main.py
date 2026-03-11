@@ -100,7 +100,7 @@ class InfoFetcher(BaseInfoFetcher):
             )
         if "guild_id" in data:
             if user:
-                return Member(user, nick=data["nickname"], role=data.get("role"), joined_at=data.get("joined_at"))
+                return Member(user, nick=data["nickname"], roles=data.get("roles", []), joined_at=data.get("joined_at"))
             return Member(
                 User(
                     id=data["user_id"],
@@ -108,7 +108,7 @@ class InfoFetcher(BaseInfoFetcher):
                     avatar=data.get("avatar"),
                 ),
                 nick=data["nickname"],
-                role=data.get("role"),
+                roles=data.get("roles", []),
                 joined_at=data.get("joined_at"),
             )
         return None
@@ -152,7 +152,7 @@ class InfoFetcher(BaseInfoFetcher):
                     avatar=member.user.avatar if member.user else None,
                 ),
                 nick=member.nick,
-                role=await _handle_role(bot, parent_scene_id, None, member.roles or []),
+                roles=await _handle_roles(bot, parent_scene_id, None, member.roles or []),
                 joined_at=member.joined_at,
             )
         if scene_type == SceneType.GROUP:
@@ -207,9 +207,9 @@ class InfoFetcher(BaseInfoFetcher):
 fetcher = InfoFetcher(SupportAdapter.qq)
 
 
-async def _handle_role(bot: Bot, guild_id: str, channel_id: str | None, roles: list[str]):
+async def _handle_roles(bot: Bot, guild_id: str, channel_id: str | None, roles: list[str]):
     if not roles:
-        return Role(*ROLES["1"])
+        return [Role(*ROLES["1"])]
     res = []
     try:
         resp = await bot.get_guild_roles(guild_id=guild_id)
@@ -232,8 +232,8 @@ async def _handle_role(bot: Bot, guild_id: str, channel_id: str | None, roles: l
         except ActionFailed:
             res.append(("MEMBER", 1, roles_info.get(role, "成员")))
     if not res:
-        return Role(*ROLES["1"])
-    return Role(*sorted(res, key=lambda x: x[1], reverse=True)[0])
+        return [Role(*ROLES["1"])]
+    return [Role(*r) for r in res]
 
 
 @fetcher.supply
@@ -265,7 +265,7 @@ async def _(bot: Bot, event: InteractionCreateEvent):
         member = await bot.get_member(guild_id=event.guild_id, user_id=event.data.resolved.user_id)  # type: ignore
         base["name"] = (member.user.username if member.user else "") or ""
         base["nickname"] = member.nick or ""
-        base["role"] = await _handle_role(bot, event.guild_id, event.channel_id, member.roles or [])  # type: ignore
+        base["roles"] = await _handle_roles(bot, event.guild_id, event.channel_id, member.roles or [])  # type: ignore
         base["joined_at"] = member.joined_at
     except ActionFailed:
         pass
@@ -316,7 +316,7 @@ async def _(bot: Bot, event: Event):
         if event.member:
             base |= {
                 "nickname": event.member.nick or "",
-                "role": await _handle_role(bot, event.guild_id, event.channel_id, event.member.roles or []),
+                "roles": await _handle_roles(bot, event.guild_id, event.channel_id, event.member.roles or []),
                 "joined_at": event.member.joined_at,
             }
         try:
@@ -342,7 +342,7 @@ async def _(bot: Bot, event: Event):
         if message_event.member:
             base |= {
                 "nickname": message_event.member.nick or "",
-                "role": await _handle_role(
+                "roles": await _handle_roles(
                     bot, message_event.guild_id, message_event.channel_id, message_event.member.roles or []
                 ),
                 "joined_at": message_event.member.joined_at,
@@ -366,7 +366,9 @@ async def _(bot: Bot, event: Event):
             operator = await bot.get_member(guild_id=message_event.guild_id, user_id=event.op_user.id)
             base["operator"] |= {
                 "nickname": operator.nick or "",
-                "role": await _handle_role(bot, message_event.guild_id, message_event.channel_id, operator.roles or []),
+                "roles": await _handle_roles(
+                    bot, message_event.guild_id, message_event.channel_id, operator.roles or []
+                ),
                 "joined_at": operator.joined_at,
             }
         except ActionFailed:
@@ -390,7 +392,7 @@ async def _(bot: Bot, event: Event):
                 "name": (operator.user.username if operator.user else "") or "",
                 "nickname": operator.nick or "",
                 "avatar": operator.user.avatar if operator.user else None,
-                "role": await _handle_role(bot, event.id, None, operator.roles or []),
+                "roles": await _handle_roles(bot, event.id, None, operator.roles or []),
                 "joined_at": operator.joined_at,
             }
         except ActionFailed:
@@ -403,7 +405,7 @@ async def _(bot: Bot, event: Event):
             "nickname": event.nick or "",
             "avatar": event.user.avatar if event.user else None,
             "guild_id": event.guild_id,
-            "role": await _handle_role(bot, event.guild_id, None, event.roles or []),
+            "roles": await _handle_roles(bot, event.guild_id, None, event.roles or []),
             "joined_at": event.joined_at,
         }
         try:
@@ -419,7 +421,7 @@ async def _(bot: Bot, event: Event):
                 "name": (operator.user.username if operator.user else "") or "",
                 "nickname": operator.nick or "",
                 "avatar": operator.user.avatar if operator.user else None,
-                "role": await _handle_role(bot, event.guild_id, None, operator.roles or []),
+                "roles": await _handle_roles(bot, event.guild_id, None, operator.roles or []),
                 "joined_at": operator.joined_at,
             }
         except ActionFailed:
@@ -450,7 +452,7 @@ async def _(bot: Bot, event: Event):
                 "name": (operator.user.username if operator.user else "") or "",
                 "nickname": operator.nick or "",
                 "avatar": operator.user.avatar if operator.user else None,
-                "role": await _handle_role(bot, event.guild_id, event.id, operator.roles or []),
+                "roles": await _handle_roles(bot, event.guild_id, event.id, operator.roles or []),
                 "joined_at": operator.joined_at,
             }
         except ActionFailed:

@@ -79,7 +79,7 @@ class InfoFetcher(BaseInfoFetcher):
             return Member(
                 user=user,
                 nick=data["card"],
-                role=Role(*ROLES[_role], name=_role) if (_role := data.get("role")) else None,
+                roles=[Role(*ROLES[_role], name=_role)] if (_role := data.get("role")) else [],
                 joined_at=datetime.fromtimestamp(data["join_time"]) if data["join_time"] else None,
                 mute=(
                     MuteInfo(muted=True, duration=timedelta(seconds=data["mute_duration"]))
@@ -95,7 +95,7 @@ class InfoFetcher(BaseInfoFetcher):
                 avatar=f"https://q2.qlogo.cn/headimg_dl?dst_uin={data['user_id']}&spec=640",
             ),
             nick=data["card"],
-            role=Role(*ROLES[_role], name=_role) if (_role := data.get("role")) else None,
+            roles=[Role(*ROLES[_role], name=_role)] if (_role := data.get("role")) else [],
             joined_at=datetime.fromtimestamp(data["join_time"]) if data["join_time"] else None,
             mute=(
                 MuteInfo(muted=True, duration=timedelta(seconds=data["mute_duration"]))

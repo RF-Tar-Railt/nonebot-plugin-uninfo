@@ -1,6 +1,6 @@
 from nonebot.adapters.satori import Bot
 from nonebot.adapters.satori.event import Event
-from nonebot.adapters.satori.models import Channel, ChannelType, Guild, Friend
+from nonebot.adapters.satori.models import Channel, ChannelType, Friend, Guild
 from nonebot.adapters.satori.models import User as SatoriUser
 
 from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
@@ -9,9 +9,18 @@ from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
 from nonebot_plugin_uninfo.model import Member, Role, Scene, SceneType, User
 
 ROLES = {
-    "OWNER": 100,
-    "ADMINISTRATOR": 10,
-    "MEMBER": 1,
+    "OWNER": ("OWNER", 100),
+    "owner": ("OWNER", 100),
+    "ADMINISTRATOR": ("ADMINISTRATOR", 10),
+    "administrator": ("ADMINISTRATOR", 10),
+    "ADMIN": ("ADMINISTRATOR", 10),
+    "admin": ("ADMINISTRATOR", 10),
+    "CHANNEL_ADMINISTRATOR": ("CHANNEL_ADMINISTRATOR", 8),
+    "channel_administrator": ("CHANNEL_ADMINISTRATOR", 8),
+    "CHANNEL_ADMIN": ("CHANNEL_ADMINISTRATOR", 8),
+    "channel_admin": ("CHANNEL_ADMINISTRATOR", 8),
+    "MEMBER": ("MEMBER", 1),
+    "member": ("MEMBER", 1),
 }
 
 
@@ -57,11 +66,7 @@ class InfoFetcher(BaseInfoFetcher):
             return Member(
                 user=user,
                 nick=data["member_name"],
-                role=(
-                    Role(data["role_id"], ROLES.get(data["role_name"], 1), data["role_name"])
-                    if "role_id" in data
-                    else None
-                ),
+                roles=data.get("member_roles", []),
                 joined_at=data["joined_at"],
             )
         return Member(
@@ -72,9 +77,7 @@ class InfoFetcher(BaseInfoFetcher):
                 avatar=data.get("avatar"),
             ),
             nick=data["member_name"],
-            role=(
-                Role(data["role_id"], ROLES.get(data["role_name"], 1), data["role_name"]) if "role_id" in data else None
-            ),
+            roles=data.get("member_roles", []),
             joined_at=data["joined_at"],
         )
 
@@ -92,7 +95,7 @@ class InfoFetcher(BaseInfoFetcher):
                 "name": user.name,
                 "nickname": user.nick,
                 "avatar": user.avatar,
-        }
+            }
         return self.extract_user(data)
 
     def _pack_guild(self, bot: Bot, guild: Guild):
@@ -165,6 +168,7 @@ class InfoFetcher(BaseInfoFetcher):
             friends = await bot.friend_list(next_token=friends.next)
             for friend in friends.data:
                 yield self._pack_user(friend)
+
     async def query_scenes(self, bot: Bot, scene_type: SceneType | None = None, *, parent_scene_id: str | None = None):
         if scene_type is None or scene_type == SceneType.PRIVATE:
             async for user in self.query_users(bot):
@@ -292,9 +296,7 @@ async def _(bot: Bot, event: Event):
         base["joined_at"] = event.member.joined_at
         if event.member.avatar:
             base["avatar"] = event.member.avatar
-    if event.role:
-        base["role_id"] = event.role.id
-        base["role_name"] = event.role.name
+        base["member_roles"] = [Role(*ROLES.get(role.id, (role.id, 1)), role.name) for role in event.member.roles]
     if event.operator:
         base["operator"] = {
             "user_id": event.operator.id,

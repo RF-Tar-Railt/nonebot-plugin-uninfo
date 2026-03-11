@@ -62,9 +62,9 @@ def avatar_url(id: str, avatar: str):
     return f"{BASE_URL}avatars/{id}/{avatar}.png?size=1024"
 
 
-async def _handle_role(bot: Bot, guild_id: str, roles: list[Snowflake]):
+async def _handle_roles(bot: Bot, guild_id: str, roles: list[Snowflake]):
     if not roles:
-        return Role("MEMBER", 1, "member")
+        return [Role("MEMBER", 1, "member")]
     res = []
     resp = await bot.get_guild_roles(guild_id=int(guild_id))
     for role in resp:
@@ -79,8 +79,8 @@ async def _handle_role(bot: Bot, guild_id: str, roles: list[Snowflake]):
             res.append(("CHANNEL_ADMINISTRATOR", 9, role.name))
         res.append((str(role.id), 1, role.name))
     if not res:
-        return Role("MEMBER", 1, "member")
-    return Role(*sorted(res, key=lambda x: x[1], reverse=True)[0])
+        return [Role("MEMBER", 1, "member")]
+    return [Role(*r) for r in res]
 
 
 class InfoFetcher(BaseInfoFetcher):
@@ -129,7 +129,7 @@ class InfoFetcher(BaseInfoFetcher):
     def extract_member(self, data, user: User | None):
         if "guild_id" in data or "channel_id" in data:
             if user:
-                return Member(user, nick=data["nickname"], role=data.get("role"), joined_at=data.get("joined_at"))
+                return Member(user, nick=data["nickname"], roles=data.get("roles", []), joined_at=data.get("joined_at"))
             return Member(
                 User(
                     id=data["user_id"],
@@ -137,7 +137,7 @@ class InfoFetcher(BaseInfoFetcher):
                     avatar=avatar_url(data["user_id"], data.get("avatar") or ""),
                 ),
                 nick=data["nickname"],
-                role=data.get("role"),
+                roles=data.get("roles", []),
                 joined_at=data.get("joined_at"),
             )
         return None
@@ -199,7 +199,7 @@ class InfoFetcher(BaseInfoFetcher):
             return Member(
                 user=user,
                 nick="" if member.nick is UNSET else member.nick,
-                role=await _handle_role(bot, guild_id, member.roles),
+                roles=await _handle_roles(bot, guild_id, member.roles),
                 joined_at=member.joined_at,
                 mute=None if member.mute is UNSET else MuteInfo(muted=member.mute, duration=timedelta(60)),
             )
@@ -255,7 +255,7 @@ class InfoFetcher(BaseInfoFetcher):
                 yield Member(
                     user=user,
                     nick="" if member.nick is UNSET else member.nick,
-                    role=await _handle_role(bot, guild_id, member.roles),
+                    roles=await _handle_roles(bot, guild_id, member.roles),
                     joined_at=member.joined_at,
                     mute=None if member.mute is UNSET else MuteInfo(muted=member.mute, duration=timedelta(60)),
                 )
@@ -343,14 +343,14 @@ async def _(
         if isinstance(event.member, GuildMember):
             base |= {
                 "nickname": event.member.nick or event.author.username,
-                "role": await _handle_role(bot, str(event.guild_id), event.member.roles),
+                "roles": await _handle_roles(bot, str(event.guild_id), event.member.roles),
                 "joined_at": event.member.joined_at,
             }
         else:
             member = await bot.get_guild_member(guild_id=event.guild_id, user_id=event.author.id)
             base |= {
                 "nickname": member.nick or event.author.username,
-                "role": await _handle_role(bot, str(event.guild_id), member.roles),
+                "roles": await _handle_roles(bot, str(event.guild_id), member.roles),
                 "joined_at": member.joined_at,
             }
     return base
@@ -428,7 +428,7 @@ async def _(
         member = await bot.get_guild_member(guild_id=event.guild_id, user_id=event.user_id)
         base |= {
             "nickname": member.nick or user.username,
-            "role": await _handle_role(bot, str(event.guild_id), member.roles),
+            "roles": await _handle_roles(bot, str(event.guild_id), member.roles),
             "joined_at": member.joined_at,
         }
     return base
@@ -504,7 +504,7 @@ async def _(bot: Bot, event: Event):
             "name": event.user.username,
             "nickname": event.nick or "",
             "avatar": event.avatar or event.user.avatar,
-            "role": await _handle_role(bot, str(event.guild_id), event.roles),
+            "roles": await _handle_roles(bot, str(event.guild_id), event.roles),
             "joined_at": event.joined_at,
         }
         guild = await bot.get_guild(guild_id=int(event.guild_id))
@@ -520,7 +520,7 @@ async def _(bot: Bot, event: Event):
             "name": event.user.username,
             "nickname": event.nick or "",
             "avatar": event.user.avatar,
-            "role": await _handle_role(bot, str(event.guild_id), event.roles),
+            "roles": await _handle_roles(bot, str(event.guild_id), event.roles),
             "joined_at": event.joined_at,
         }
         guild = await bot.get_guild(guild_id=int(event.guild_id))

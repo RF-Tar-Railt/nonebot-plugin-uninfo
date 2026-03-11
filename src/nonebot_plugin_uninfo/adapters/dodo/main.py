@@ -23,7 +23,7 @@ def _handle_gender(sex: int) -> str:
     return "male" if sex == 1 else "female" if sex == 0 else "unknown"
 
 
-async def _handle_role(bot: Bot, guild_id: str, user_id: str):
+async def _handle_roles(bot: Bot, guild_id: str, user_id: str):
     res = []
     resp = await bot.get_member_role_list(island_source_id=guild_id, dodo_source_id=user_id)
     for role in resp:
@@ -36,8 +36,8 @@ async def _handle_role(bot: Bot, guild_id: str, user_id: str):
             res.append(("CHANNEL_ADMINISTRATOR", 9, role.role_name))
         res.append((str(role.role_id), 1, role.role_name))
     if not res:
-        return Role("MEMBER", 1, "member")
-    return Role(*sorted(res, key=lambda x: x[1], reverse=True)[0])
+        return [Role("MEMBER", 1, "member")]
+    return [Role(*r) for r in res]
 
 
 CHANNEL_TYPE = {
@@ -94,7 +94,7 @@ class InfoFetcher(BaseInfoFetcher):
     def extract_member(self, data, user: User | None):
         if "guild_id" in data or "channel_id" in data:
             if user:
-                return Member(user, nick=data["nickname"], role=data.get("role"), joined_at=data.get("joined_at"))
+                return Member(user, nick=data["nickname"], roles=data.get("roles", []), joined_at=data.get("joined_at"))
             return Member(
                 User(
                     id=data["user_id"],
@@ -103,7 +103,7 @@ class InfoFetcher(BaseInfoFetcher):
                     gender=data["gender"],
                 ),
                 nick=data["nickname"],
-                role=data.get("role"),
+                roles=data.get("roles", []),
                 joined_at=data.get("joined_at"),
             )
         return None
@@ -152,7 +152,7 @@ class InfoFetcher(BaseInfoFetcher):
         return Member(
             user=user,
             nick=member.nick_name,
-            role=await _handle_role(bot, guild_id, member.dodo_source_id),
+            roles=await _handle_roles(bot, guild_id, member.dodo_source_id),
             joined_at=member.join_time,
         )
 
@@ -200,7 +200,7 @@ class InfoFetcher(BaseInfoFetcher):
                 yield Member(
                     user=user,
                     nick=member.nick_name,
-                    role=await _handle_role(bot, guild_id, member.dodo_source_id),
+                    roles=await _handle_roles(bot, guild_id, member.dodo_source_id),
                     joined_at=member.join_time,
                 )
             if len(members.list) < 100:
@@ -263,7 +263,7 @@ async def _(
     }
     base |= {
         "nickname": event.member.nick_name,
-        "role": await _handle_role(bot, event.island_source_id, event.dodo_source_id),
+        "roles": await _handle_roles(bot, event.island_source_id, event.dodo_source_id),
         "joined_at": event.member.join_time,
     }
     return base

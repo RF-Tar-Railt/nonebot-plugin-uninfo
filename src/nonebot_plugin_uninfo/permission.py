@@ -39,9 +39,11 @@ def ROLE_IN(role_id: str, *role_ids: str) -> Permission:
     """检查成员是否在指定角色组中"""
 
     async def _role_in(sess: Session | None = UniSession()) -> bool:
-        if not sess or not sess.member or not sess.member.role:
+        if not sess or not sess.member or not sess.member.roles:
             return False
-        return sess.member.role.id in (role_id, *role_ids)
+        member_role_ids = {role.id for role in sess.member.roles}
+        _role_ids = {role_id, *role_ids}
+        return not member_role_ids.isdisjoint(_role_ids)
 
     return Permission(_role_in)
 
@@ -50,9 +52,11 @@ def ROLE_NOT_IN(role_id: str, *role_ids: str) -> Permission:
     """检查成员是否不在指定角色组中"""
 
     async def _role_not_in(sess: Session | None = UniSession()) -> bool:
-        if not sess or not sess.member or not sess.member.role:
+        if not sess or not sess.member or not sess.member.roles:
             return True
-        return sess.member.role.id not in (role_id, *role_ids)
+        member_role_ids = {role.id for role in sess.member.roles}
+        _role_ids = {role_id, *role_ids}
+        return member_role_ids.isdisjoint(_role_ids)
 
     return Permission(_role_not_in)
 
@@ -73,9 +77,10 @@ def ROLE_LEVEL(checker: Callable[[int], bool]) -> Permission:
     """检查用户角色等级"""
 
     async def _level(sess: Session | None = UniSession()) -> bool:
-        if not sess or not sess.member or not sess.member.role:
+        if not sess or not sess.member or not sess.member.roles:
             return False
-        return checker(sess.member.role.level)
+        max_level = max((role.level for role in sess.member.roles), default=0)
+        return checker(max_level)
 
     return Permission(_level)
 

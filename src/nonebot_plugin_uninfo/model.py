@@ -1,4 +1,4 @@
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta
 from enum import IntEnum
 import json
@@ -193,23 +193,32 @@ class Member(ModelMixin):
     """群员用户信息"""
     nick: str | None = None
     """群员昵称"""
-    role: Role | None = None
-    """群员角色"""
     mute: MuteInfo | None = None
     """群员禁言信息"""
     joined_at: datetime | None = None
     """加入时间"""
+    roles: list[Role] = field(default_factory=list)
+    """群员角色"""
 
     @property
     def id(self) -> str:
         return self.user.id
+
+    @property
+    def role(self) -> Role | None:
+        """获取权限最高的角色"""
+        if not self.roles:
+            return None
+        return max(self.roles, key=lambda r: r.level)
 
     @classmethod
     def load(cls, data: dict):
         _data = data.copy()
         _data["user"] = User.load(data["user"])
         if data.get("role"):
-            _data["role"] = Role.load(data["role"])
+            _data["roles"] = [Role.load(data["role"])]
+        if data.get("roles"):
+            _data["roles"] = [Role.load(role) for role in data["roles"]]
         if data.get("mute"):
             _data["mute"] = MuteInfo.load(data["mute"])
         if data.get("joined_at"):

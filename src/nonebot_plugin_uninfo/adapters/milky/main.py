@@ -70,10 +70,10 @@ class InfoFetcher(BaseInfoFetcher):
             return Member(
                 user=user,
                 nick=data.get("card"),
-                role=(
-                    Role(*ROLES[_role], name=_role)
+                roles=(
+                    [Role(*ROLES[_role], name=_role)]
                     if (_role := data.get("role"))
-                    else Role(*ROLES["member"], name="member")
+                    else [Role(*ROLES["member"], name="member")]
                 ),
                 joined_at=datetime.fromtimestamp(data["join_time"]) if data.get("join_time") else None,
             )
@@ -85,10 +85,10 @@ class InfoFetcher(BaseInfoFetcher):
                 avatar=f"https://q2.qlogo.cn/headimg_dl?dst_uin={data['user_id']}&spec=640",
             ),
             nick=data.get("card"),
-            role=(
-                Role(*ROLES[_role], name=_role)
+            roles=(
+                [Role(*ROLES[_role], name=_role)]
                 if (_role := data.get("role"))
-                else Role(*ROLES["member"], name="member")
+                else [Role(*ROLES["member"], name="member")]
             ),
             joined_at=datetime.fromtimestamp(data["join_time"]) if data.get("join_time") else None,
         )

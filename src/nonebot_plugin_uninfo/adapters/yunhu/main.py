@@ -2,23 +2,23 @@ from typing import Any
 
 from nonebot.adapters.yunhu import Bot
 from nonebot.adapters.yunhu.event import (
-    PrivateMessageEvent,
-    GroupMessageEvent,
-    InstructionMessageEvent,
-    GroupJoinNoticeEvent,
-    GroupLeaveNoticeEvent,
     BotFollowedNoticeEvent,
     BotUnfollowedNoticeEvent,
-    TipNoticeEvent,
     ButtonReportNoticeEvent,
+    GroupJoinNoticeEvent,
+    GroupLeaveNoticeEvent,
+    GroupMessageEvent,
+    InstructionMessageEvent,
+    PrivateMessageEvent,
+    TipNoticeEvent,
 )
+from nonebot.compat import model_dump
+from nonebot.exception import ActionFailed
 
 from nonebot_plugin_uninfo.constraint import SupportAdapter, SupportScope
 from nonebot_plugin_uninfo.fetch import BasicInfo
 from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
 from nonebot_plugin_uninfo.model import Member, Role, Scene, SceneType, User
-from nonebot.compat import model_dump
-from nonebot.exception import ActionFailed
 
 ROLES = {
     "owner": ("OWNER", 100),
@@ -48,9 +48,9 @@ class InfoFetcher(BaseInfoFetcher):
 
     def extract_member(self, data: dict[str, Any], user: User | None) -> Member | None:
         if user:
-            return Member(user, role=Role(*ROLES[data["role"]], data["role"]) if "role" in data else None)
+            return Member(user, roles=[Role(*ROLES[data["role"]], data["role"])] if "role" in data else [])
         return Member(
-            self.extract_user(data), role=Role(*ROLES[data["role"]], data["role"]) if "role" in data else None
+            self.extract_user(data), roles=[Role(*ROLES[data["role"]], data["role"])] if "role" in data else []
         )
 
     async def query_user(self, bot: Bot, user_id: str):

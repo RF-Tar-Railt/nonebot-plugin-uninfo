@@ -71,7 +71,7 @@ class InfoFetcher(BaseInfoFetcher):
             return Member(
                 user=user,
                 nick=data["nickname"],
-                role=Role(*ROLES[data["role"]], data["role"]) if "role" in data else None,
+                roles=[Role(*ROLES[data["role"]], data["role"])] if "role" in data else [],
             )
         return Member(
             User(
@@ -81,7 +81,7 @@ class InfoFetcher(BaseInfoFetcher):
                 avatar=data.get("avatar"),
             ),
             nick=data["nickname"],
-            role=Role(*ROLES[data["role"]], data["role"]) if "role" in data else None,
+            roles=[Role(*ROLES[data["role"]], data["role"])] if "role" in data else [],
         )
 
     async def query_user(self, bot: Bot, user_id: str):

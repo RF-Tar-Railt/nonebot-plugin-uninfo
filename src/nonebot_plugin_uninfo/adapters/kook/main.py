@@ -10,13 +10,13 @@ from nonebot_plugin_uninfo.fetch import InfoFetcher as BaseInfoFetcher
 from nonebot_plugin_uninfo.model import Member, MuteInfo, Role, Scene, SceneType, User
 
 
-async def _handle_role(bot: Bot, guild_id: str, roles: list[int]):
+async def _handle_roles(bot: Bot, guild_id: str, roles: list[int]):
     if not roles:
-        return Role("MEMBER", 1, "member")
+        return [Role("MEMBER", 1, "member")]
     res = []
     resp = await bot.guildRole_list(guild_id=guild_id)
     if not resp.roles:
-        return Role("MEMBER", 1, "member")
+        return [Role("MEMBER", 1, "member")]
     for role in resp.roles:
         if role.role_id not in roles:
             continue
@@ -29,8 +29,8 @@ async def _handle_role(bot: Bot, guild_id: str, roles: list[int]):
             res.append(("CHANNEL_ADMINISTRATOR", 9, role.name))
         res.append((str(role.role_id), 1, role.name))
     if not res:
-        return Role("MEMBER", 1, "member")
-    return Role(*sorted(res, key=lambda x: x[1], reverse=True)[0])
+        return [Role("MEMBER", 1, "member")]
+    return [Role(*item) for item in res]
 
 
 def _handle_channel_type(channel: KookChannel):
@@ -85,7 +85,7 @@ class InfoFetcher(BaseInfoFetcher):
     def extract_member(self, data, user: User | None):
         if "guild_id" in data or "channel_id" in data:
             if user:
-                return Member(user, nick=data["nickname"], role=data.get("role"), joined_at=data.get("joined_at"))
+                return Member(user, nick=data["nickname"], roles=data.get("roles", []), joined_at=data.get("joined_at"))
             return Member(
                 User(
                     id=data["user_id"],
@@ -93,7 +93,7 @@ class InfoFetcher(BaseInfoFetcher):
                     avatar=data.get("avatar"),
                 ),
                 nick=data["nickname"],
-                role=data.get("role"),
+                roles=data.get("roles", []),
                 joined_at=data.get("joined_at"),
             )
         return None
@@ -144,7 +144,7 @@ class InfoFetcher(BaseInfoFetcher):
         return Member(
             user=user,
             nick=member.nickname or member.username,
-            role=await _handle_role(bot, guild_id, member.roles or []),
+            roles=await _handle_roles(bot, guild_id, member.roles or []),
             joined_at=datetime.fromtimestamp(member.joined_at / 1000) if member.joined_at else None,
             mute=MuteInfo(muted=True, duration=timedelta(60)) if member.status == 10 else None,
         )
@@ -222,7 +222,7 @@ class InfoFetcher(BaseInfoFetcher):
                     yield Member(
                         user=user,
                         nick=member.nickname or member.username,
-                        role=await _handle_role(bot, parent_scene_id, member.roles or []),
+                        roles=await _handle_roles(bot, parent_scene_id, member.roles or []),
                         joined_at=datetime.fromtimestamp(member.joined_at / 1000) if member.joined_at else None,
                         mute=MuteInfo(muted=True, duration=timedelta(60)) if member.status == 10 else None,
                     )
@@ -240,7 +240,7 @@ class InfoFetcher(BaseInfoFetcher):
                 yield Member(
                     user=user,
                     nick=member.nickname or member.username,
-                    role=await _handle_role(bot, parent_scene_id, member.roles or []),
+                    roles=await _handle_roles(bot, parent_scene_id, member.roles or []),
                     joined_at=datetime.fromtimestamp(member.joined_at / 1000) if member.joined_at else None,
                     mute=MuteInfo(muted=True, duration=timedelta(60)) if member.status == 10 else None,
                 )
@@ -303,7 +303,7 @@ async def _(bot: Bot, event: Event):
             member = await bot.user_view(guild_id=guild_id, user_id=event.user_id)
             base |= {
                 "nickname": member.nickname,
-                "role": await _handle_role(bot, guild_id, member.roles or []),
+                "roles": await _handle_roles(bot, guild_id, member.roles or []),
                 "joined_at": datetime.fromtimestamp(member.joined_at / 1000) if member.joined_at else None,
             }
     else:
@@ -317,7 +317,7 @@ async def _(bot: Bot, event: Event):
         member = await bot.user_view(guild_id=guild_id, user_id=event.user_id)
         base |= {
             "nickname": member.nickname,
-            "role": await _handle_role(bot, guild_id, member.roles or []),
+            "roles": await _handle_roles(bot, guild_id, member.roles or []),
             "joined_at": datetime.fromtimestamp(member.joined_at / 1000) if member.joined_at else None,
         }
     return base
