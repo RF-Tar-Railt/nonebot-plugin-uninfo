@@ -4,8 +4,8 @@ from nonebot.adapters.discord import Bot, is_not_unset, is_unset
 from nonebot.adapters.discord.api.model import Channel as DiscordChannel
 from nonebot.adapters.discord.api.model import GuildMember, Snowflake
 from nonebot.adapters.discord.api.model import User as DiscordUser
-from nonebot.adapters.discord.api.types import UNSET
 from nonebot.adapters.discord.api.types import ChannelType as DiscordChannelType
+from nonebot.adapters.discord.api.types import UNSET
 from nonebot.adapters.discord.event import (
     ChannelCreateEvent,
     ChannelDeleteEvent,
@@ -231,9 +231,11 @@ class InfoFetcher(BaseInfoFetcher):
                             id=str(channel.id),
                             type=CHANNEL_TYPE.get(channel.type, SceneType.CHANNEL_TEXT),
                             name=(channel.name if is_not_unset(channel.name) else None),
-                            avatar=avatar_url(str(channel.id), channel.icon)
-                            if is_not_unset(channel.icon) and channel.icon is not None
-                            else None,
+                            avatar=(
+                                avatar_url(str(channel.id), channel.icon)
+                                if is_not_unset(channel.icon) and channel.icon is not None
+                                else None
+                            ),
                             parent=_guild,
                         )
             if len(guilds) < 100:
