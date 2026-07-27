@@ -9,9 +9,11 @@ from .model import Member as Member
 from .model import MuteInfo as MuteInfo
 from .model import Role as Role
 from .model import Scene as Scene
+from .model import SceneRef as SceneRef
 from .model import SceneType as SceneType
 from .model import Session as Session
 from .model import User as User
+from .model import UserRef as UserRef
 from .params import Interface as Interface
 from .params import QryItrface as QryItrface
 from .params import QueryInterface as QueryInterface

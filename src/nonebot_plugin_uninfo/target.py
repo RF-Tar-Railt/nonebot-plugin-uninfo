@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, Literal, overload
 
 from .constraint import SupportScope
-from .model import BasicInfo, Member, Scene, Session, User
+from .model import BasicInfo, Member, Scene, SceneRef, SceneType, Session, User, UserRef
 
 if TYPE_CHECKING:
     from nonebot_plugin_alconna import Target
@@ -9,6 +9,10 @@ if TYPE_CHECKING:
 
 @overload
 def to_target(model: Session, *, without_self: bool = False) -> "Target": ...
+
+
+@overload
+def to_target(model: UserRef | SceneRef) -> "Target": ...
 
 
 @overload
@@ -20,7 +24,7 @@ def to_target(model: User | Member | Scene, info: str | SupportScope, *, without
 
 
 def to_target(
-    model: Session | User | Member | Scene,
+    model: Session | User | Member | Scene | UserRef | SceneRef,
     info: BasicInfo | str | SupportScope | None = None,
     without_self: bool = False,
 ) -> "Target":
@@ -48,6 +52,22 @@ def to_target(
             model.scene.is_private,
             self_id=model.self_id,
             adapter=AlconnaSupportAdapter(model.adapter),
+            scope=AlconnaSupportScope(model.scope),
+        )
+    if isinstance(model, (UserRef, SceneRef)) and info is not None:
+        raise ValueError("info is not supported when model is UserRef or SceneRef")
+    if isinstance(model, UserRef):
+        return Target(
+            model.id,
+            private=True,
+            scope=AlconnaSupportScope(model.scope),
+        )
+    if isinstance(model, SceneRef):
+        return Target(
+            model.id,
+            model.parent_id or "",
+            model.type.value >= SceneType.CHANNEL_TEXT.value,
+            model.type == SceneType.PRIVATE,
             scope=AlconnaSupportScope(model.scope),
         )
     if not info:
@@ -85,4 +105,4 @@ def to_target(
             **basic,  # type: ignore
         )
     else:
-        raise ValueError("model must be Session, User, Member or Scene")
+        raise ValueError("model must be Session, User, UserRef, Member, Scene or SceneRef")

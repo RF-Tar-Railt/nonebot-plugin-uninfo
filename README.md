@@ -61,6 +61,24 @@ async def handle1(session: Uninfo):
     ...
 ```
 
+### 使用 `Ref` 并构造 `Target`：
+
+```python
+from nonebot_plugin_alconna import UniMessage
+from nonebot_plugin_uninfo import Uninfo
+from nonebot_plugin_uninfo.target import to_target
+
+@matcher.handle()
+async def handle(session: Uninfo):
+    user_ref = session.user_ref
+    scene_ref = session.scene_ref
+
+    user_target = to_target(user_ref)
+    scene_target = to_target(scene_ref)
+
+    await UniMessage("ping").send(scene_target)
+```
+
 ### 拉取用户/群组/频道列表：
 
 ```python
@@ -94,6 +112,13 @@ matcher = on_command("inspect", permission=ADMIN())
 | `avatar` | str \| None | 用户头像  |      |
 | `gender` | str         | 用户性别  |      |
 
+### `UserRef`
+
+| 属性      | 类型         | 含义      | 备注 |
+|---------|------------|---------|----|
+| `scope`   | SupportScope | 平台身份域   |    |
+| `id`      | str          | 用户 id    |    |
+
 ### `Scene`
 
 | 属性       | 类型            | 含义    | 备注                                              |
@@ -103,6 +128,15 @@ matcher = on_command("inspect", permission=ADMIN())
 | `name`   | str \| None   | 场景名称  |                                                 |
 | `avatar` | str \| None   | 场景图标  |                                                 |
 | `parent` | Scene \| None | 父级场景  | 适用于频道的二级群组场景, 或针对临时会话的来源群组                      |
+
+### `SceneRef`
+
+| 属性           | 类型            | 含义       | 备注       |
+|--------------|---------------|----------|----------|
+| `scope`        | SupportScope  | 平台身份域    |          |
+| `id`           | str           | 场景 id     |          |
+| `type`         | SceneType     | 场景类型     |          |
+| `parent_id`    | str \| None   | 父级场景 id  | 无父级时为空   |
 
 ### `Member`
 
@@ -125,6 +159,8 @@ matcher = on_command("inspect", permission=ADMIN())
 | `user`     | User           | 用户信息   |                    |
 | `member`   | Member \| None | 成员信息   | 仅适用于群组,频道场景        |
 | `operator` | Member \| None | 操作者信息  | 仅适用于群组,频道场景        |
+| `user_ref` | UserRef        | 用户身份标识 | 由 scope 和 user 生成 |
+| `scene_ref` | SceneRef      | 场景身份标识 | 由 scope 和 scene 生成 |
 
 ## 示例
 

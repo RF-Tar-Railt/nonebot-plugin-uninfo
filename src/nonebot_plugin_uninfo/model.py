@@ -64,7 +64,6 @@ def _apply_schema(cls: type[C]) -> type[C]:
 
 
 class ModelMixin:
-
     @classmethod
     def load(cls, data: dict):
         return cls(**data)  # type: ignore  # noqa
@@ -84,6 +83,54 @@ class HashableMixin:
 
     def __eq__(self, other: object) -> bool:
         return isinstance(other, type(self)) and self.id == other.id
+
+
+@dataclass(frozen=True, slots=True)
+class UserRef:
+    """用户在平台身份域内的轻量身份标识。"""
+
+    scope: SupportScope
+    """用户所属的平台身份域"""
+    id: str
+    """平台提供的用户 id"""
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "scope", SupportScope(self.scope))
+        object.__setattr__(self, "id", str(self.id))
+
+    @classmethod
+    def from_user(cls, user: "User", scope: str | SupportScope) -> "UserRef":
+        return cls(scope=SupportScope(scope), id=user.id)
+
+
+@dataclass(frozen=True, slots=True)
+class SceneRef:
+    """场景在平台身份域内的轻量身份标识。"""
+
+    scope: SupportScope
+    """场景所属的平台身份域"""
+    id: str
+    """平台提供的场景 id"""
+    type: SceneType
+    """场景类型"""
+    parent_id: str | None = None
+    """直接父级场景 id"""
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "scope", SupportScope(self.scope))
+        object.__setattr__(self, "id", str(self.id))
+        object.__setattr__(self, "type", SceneType(self.type))
+        if self.parent_id is not None:
+            object.__setattr__(self, "parent_id", str(self.parent_id))
+
+    @classmethod
+    def from_scene(cls, scene: "Scene", scope: str | SupportScope) -> "SceneRef":
+        return cls(
+            scope=SupportScope(scope),
+            id=scene.id,
+            type=scene.type,
+            parent_id=scene.parent.id if scene.parent else None,
+        )
 
 
 @_apply_schema
@@ -297,6 +344,14 @@ class Session(ModelMixin, HashableMixin):
     @property
     def basic(self) -> BasicInfo:
         return {"self_id": self.self_id, "adapter": SupportAdapter(self.adapter), "scope": SupportScope(self.scope)}
+
+    @property
+    def user_ref(self) -> UserRef:
+        return UserRef.from_user(self.user, self.scope)
+
+    @property
+    def scene_ref(self) -> SceneRef:
+        return SceneRef.from_scene(self.scene, self.scope)
 
     @classmethod
     def load(cls, data: dict):
