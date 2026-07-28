@@ -22,6 +22,7 @@ from .params import UniSession as UniSession
 from .params import Uninfo as Uninfo
 from .params import get_interface as get_interface
 from .params import get_session as get_session
+from .params import resolve_ref as resolve_ref
 from .permission import ADMIN as ADMIN
 from .permission import GROUP as GROUP
 from .permission import GUILD as GUILD

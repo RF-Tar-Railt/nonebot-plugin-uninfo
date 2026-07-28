@@ -65,13 +65,15 @@ async def handle1(session: Uninfo):
 
 ```python
 from nonebot_plugin_alconna import UniMessage
-from nonebot_plugin_uninfo import Uninfo
+from nonebot_plugin_uninfo import Uninfo, resolve_ref
 from nonebot_plugin_uninfo.target import to_target
 
 @matcher.handle()
 async def handle(session: Uninfo):
     user_ref = session.user_ref
     scene_ref = session.scene_ref
+
+    user = await resolve_ref(user_ref)
 
     user_target = to_target(user_ref)
     scene_target = to_target(scene_ref)

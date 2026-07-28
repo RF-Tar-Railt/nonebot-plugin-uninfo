@@ -1,11 +1,13 @@
-from typing import Annotated
+from typing import Annotated, overload
 
 from nonebot.adapters import Bot
 from nonebot.params import Depends
 
 from .adapters import INFO_FETCHER_MAPPING, alter_get_fetcher
+from .constraint import SupportScope
 from .fetch import InfoFetcher
-from .model import Member, Scene, SceneType, Session, User
+from .model import Member, MemberRef, Scene, SceneRef, SceneType, Session, User, UserRef
+from .target import to_target
 
 
 async def get_session(bot: Bot, event):
@@ -35,6 +37,34 @@ class Interface:
 
     def basic_info(self):
         return self.fetcher.supply_self(self.bot)
+
+    @overload
+    async def resolve(self, ref: UserRef) -> User | None: ...
+
+    @overload
+    async def resolve(self, ref: SceneRef) -> Scene | None: ...
+
+    @overload
+    async def resolve(self, ref: MemberRef) -> Member | None: ...
+
+    async def resolve(self, ref: UserRef | SceneRef | MemberRef) -> User | Scene | Member | None:
+        match ref:
+            case UserRef(scope=scope, id=user_id):
+                self._check_scope(scope)
+                return await self.get_user(user_id)
+            case SceneRef(scope=scope, type=scene_type, id=scene_id, parent_id=parent_id):
+                self._check_scope(scope)
+                return await self.get_scene(scene_type, scene_id, parent_scene_id=parent_id)
+            case MemberRef(scene=scene, user_id=user_id):
+                self._check_scope(scene.scope)
+                return await self.get_member(scene.type, scene.parent_id or scene.id, user_id)
+            case _:
+                raise TypeError(f"unsupported ref: {ref!r}")
+
+    def _check_scope(self, scope: SupportScope) -> None:
+        interface_scope = SupportScope(self.basic_info()["scope"])
+        if scope != interface_scope:
+            raise ValueError(f"ref scope {scope!r} does not match interface scope {interface_scope!r}")
 
     async def get_user(self, user_id: str) -> User | None:
         """根据用户id获取用户信息
@@ -170,12 +200,38 @@ class Interface:
             return
 
 
-def get_interface(bot: Bot):
+def get_interface(bot: Bot) -> Interface | None:
     adapter = bot.adapter.get_name()
     fetcher = INFO_FETCHER_MAPPING.get(adapter)
     if fetcher:
         return Interface(bot, fetcher)
     return None
+
+
+@overload
+async def resolve_ref(ref: UserRef, /) -> User | None: ...
+
+
+@overload
+async def resolve_ref(ref: SceneRef, /) -> Scene | None: ...
+
+
+@overload
+async def resolve_ref(ref: MemberRef, /) -> Member | None: ...
+
+
+async def resolve_ref(ref: UserRef | SceneRef | MemberRef, /) -> User | Scene | Member | None:
+    match ref:
+        case UserRef() | SceneRef():
+            target = to_target(ref)
+        case MemberRef(scene=scene):
+            target = to_target(scene)
+        case _:
+            raise TypeError(f"unsupported ref: {ref!r}")
+
+    bot = await target.select()
+    if interface := get_interface(bot):
+        return await interface.resolve(ref)
 
 
 def QueryInterface() -> Interface:
