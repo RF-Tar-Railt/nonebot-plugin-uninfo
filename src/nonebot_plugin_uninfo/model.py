@@ -137,19 +137,51 @@ class SceneRef:
 class MemberRef:
     """非私聊场景中的成员身份标识。"""
 
-    scene: SceneRef
-    """成员所在的场景"""
+    scope: SupportScope
+    """成员所属的平台身份域"""
+    scene_id: str
+    """成员所在的场景 id"""
+    scene_type: SceneType
+    """成员所在的场景类型"""
     user_id: str
     """成员对应的用户 id"""
+    scene_parent_id: str | None = None
+    """直接父级场景 id"""
 
     def __post_init__(self) -> None:
-        if self.scene.type == SceneType.PRIVATE:
-            raise ValueError("member cannot belong to a private scene")
+        object.__setattr__(self, "scope", SupportScope(self.scope))
+        object.__setattr__(self, "scene_id", str(self.scene_id))
+        object.__setattr__(self, "scene_type", SceneType(self.scene_type))
         object.__setattr__(self, "user_id", str(self.user_id))
+        if self.scene_parent_id is not None:
+            object.__setattr__(self, "scene_parent_id", str(self.scene_parent_id))
+        if self.scene_type == SceneType.PRIVATE:
+            raise ValueError("member cannot belong to a private scene")
+
+    @property
+    def scene_ref(self) -> SceneRef:
+        return SceneRef(
+            scope=self.scope,
+            id=self.scene_id,
+            type=self.scene_type,
+            parent_id=self.scene_parent_id,
+        )
 
     @property
     def user_ref(self) -> UserRef:
-        return UserRef(scope=self.scene.scope, id=self.user_id)
+        return UserRef(scope=self.scope, id=self.user_id)
+
+    @classmethod
+    def from_refs(cls, scene_ref: SceneRef, user_ref: UserRef) -> "MemberRef":
+        if scene_ref.scope != user_ref.scope:
+            raise ValueError("scene and user must use the same scope")
+        return cls(
+            scope=scene_ref.scope,
+            scene_id=scene_ref.id,
+            scene_type=scene_ref.type,
+            user_id=user_ref.id,
+            scene_parent_id=scene_ref.parent_id,
+        )
 
 
 @_apply_schema
@@ -376,15 +408,15 @@ class Session(ModelMixin, HashableMixin):
     def member_ref(self) -> MemberRef | None:
         if self.scene.is_private:
             return None
-        return MemberRef(scene=self.scene_ref, user_id=self.user.id)
+        return MemberRef.from_refs(self.scene_ref, self.user_ref)
 
     @property
     def operator_ref(self) -> MemberRef | None:
         if self.scene.is_private or self.operator is None:
             return None
-        return MemberRef(
-            scene=self.scene_ref,
-            user_id=self.operator.user.id,
+        return MemberRef.from_refs(
+            self.scene_ref,
+            UserRef.from_user(self.operator.user, self.scope),
         )
 
     @classmethod

@@ -152,11 +152,15 @@ matcher = on_command("inspect", permission=ADMIN())
 
 ### `MemberRef`
 
-| 属性         | 类型       | 含义     | 备注            |
-|------------|----------|--------|---------------|
-| `scene`    | SceneRef | 所在场景标识 | 不能是私聊场景       |
-| `user_id`  | str      | 用户 id  |               |
-| `user_ref` | UserRef  | 用户身份标识 | 由 scene 和 user_id 生成 |
+| 属性           | 类型          | 含义       | 备注                         |
+|--------------|-------------|----------|----------------------------|
+| `scope`       | SupportScope | 平台身份域    |                            |
+| `scene_id`    | str          | 场景 id     |                            |
+| `scene_type`  | SceneType    | 场景类型     | 不能是私聊场景                   |
+| `user_id`     | str          | 用户 id     |                            |
+| `scene_parent_id` | str \| None | 父级场景 id | 无父级时为空                     |
+| `scene_ref`   | SceneRef     | 场景身份标识   | 由场景相关字段生成                  |
+| `user_ref`    | UserRef      | 用户身份标识   | 由 scope 和 user_id 生成         |
 
 ### `Session`
 

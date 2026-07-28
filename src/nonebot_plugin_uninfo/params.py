@@ -55,9 +55,15 @@ class Interface:
             case SceneRef(scope=scope, type=scene_type, id=scene_id, parent_id=parent_id):
                 self._check_scope(scope)
                 return await self.get_scene(scene_type, scene_id, parent_scene_id=parent_id)
-            case MemberRef(scene=scene, user_id=user_id):
-                self._check_scope(scene.scope)
-                return await self.get_member(scene.type, scene.parent_id or scene.id, user_id)
+            case MemberRef(
+                scope=scope,
+                scene_id=scene_id,
+                scene_type=scene_type,
+                user_id=user_id,
+                scene_parent_id=scene_parent_id,
+            ):
+                self._check_scope(scope)
+                return await self.get_member(scene_type, scene_parent_id or scene_id, user_id)
             case _:
                 raise TypeError(f"unsupported ref: {ref!r}")
 
@@ -224,8 +230,8 @@ async def resolve_ref(ref: UserRef | SceneRef | MemberRef, /) -> User | Scene | 
     match ref:
         case UserRef() | SceneRef():
             target = to_target(ref)
-        case MemberRef(scene=scene):
-            target = to_target(scene)
+        case MemberRef(scene_ref=scene_ref):
+            target = to_target(scene_ref)
         case _:
             raise TypeError(f"unsupported ref: {ref!r}")
 
