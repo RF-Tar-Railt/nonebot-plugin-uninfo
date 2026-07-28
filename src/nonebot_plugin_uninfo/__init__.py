@@ -6,6 +6,7 @@ from .constraint import SupportAdapterModule
 from .constraint import SupportScope as SupportScope
 from .fetch import InfoFetcher as InfoFetcher
 from .model import Member as Member
+from .model import MemberRef as MemberRef
 from .model import MuteInfo as MuteInfo
 from .model import Role as Role
 from .model import Scene as Scene

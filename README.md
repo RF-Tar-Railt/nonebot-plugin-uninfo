@@ -148,6 +148,14 @@ matcher = on_command("inspect", permission=ADMIN())
 | `mute`      | MuteInfo \| None | 成员禁言信息  |                               |
 | `joined_at` | datetime \| None | 成员加入时间  |                               |
 
+### `MemberRef`
+
+| 属性         | 类型       | 含义     | 备注            |
+|------------|----------|--------|---------------|
+| `scene`    | SceneRef | 所在场景标识 | 不能是私聊场景       |
+| `user_id`  | str      | 用户 id  |               |
+| `user_ref` | UserRef  | 用户身份标识 | 由 scene 和 user_id 生成 |
+
 ### `Session`
 
 | 属性         | 类型             | 含义     | 备注                 |
@@ -161,6 +169,8 @@ matcher = on_command("inspect", permission=ADMIN())
 | `operator` | Member \| None | 操作者信息  | 仅适用于群组,频道场景        |
 | `user_ref` | UserRef        | 用户身份标识 | 由 scope 和 user 生成 |
 | `scene_ref` | SceneRef      | 场景身份标识 | 由 scope 和 scene 生成 |
+| `member_ref` | MemberRef \| None | 成员身份标识 | 仅适用于群组,频道场景 |
+| `operator_ref` | MemberRef \| None | 操作者身份标识 | 无操作者时为空 |
 
 ## 示例
 

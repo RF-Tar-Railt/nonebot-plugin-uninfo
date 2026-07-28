@@ -133,6 +133,25 @@ class SceneRef:
         )
 
 
+@dataclass(frozen=True, slots=True)
+class MemberRef:
+    """非私聊场景中的成员身份标识。"""
+
+    scene: SceneRef
+    """成员所在的场景"""
+    user_id: str
+    """成员对应的用户 id"""
+
+    def __post_init__(self) -> None:
+        if self.scene.type == SceneType.PRIVATE:
+            raise ValueError("member cannot belong to a private scene")
+        object.__setattr__(self, "user_id", str(self.user_id))
+
+    @property
+    def user_ref(self) -> UserRef:
+        return UserRef(scope=self.scene.scope, id=self.user_id)
+
+
 @_apply_schema
 @dataclass
 class Scene(ModelMixin, HashableMixin):
@@ -352,6 +371,21 @@ class Session(ModelMixin, HashableMixin):
     @property
     def scene_ref(self) -> SceneRef:
         return SceneRef.from_scene(self.scene, self.scope)
+
+    @property
+    def member_ref(self) -> MemberRef | None:
+        if self.scene.is_private:
+            return None
+        return MemberRef(scene=self.scene_ref, user_id=self.user.id)
+
+    @property
+    def operator_ref(self) -> MemberRef | None:
+        if self.scene.is_private or self.operator is None:
+            return None
+        return MemberRef(
+            scene=self.scene_ref,
+            user_id=self.operator.user.id,
+        )
 
     @classmethod
     def load(cls, data: dict):
