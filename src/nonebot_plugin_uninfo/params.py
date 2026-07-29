@@ -48,29 +48,25 @@ class Interface:
     async def resolve(self, ref: MemberRef) -> Member | None: ...
 
     async def resolve(self, ref: UserRef | SceneRef | MemberRef) -> User | Scene | Member | None:
+        if not isinstance(ref, (UserRef, SceneRef, MemberRef)):
+            raise TypeError(f"unsupported ref: {ref!r}")
+
+        interface_scope = SupportScope(self.basic_info()["scope"])
+        if ref.scope != interface_scope:
+            raise ValueError(f"ref scope {ref.scope!r} does not match interface scope {interface_scope!r}")
+
         match ref:
-            case UserRef(scope=scope, id=user_id):
-                self._check_scope(scope)
+            case UserRef(id=user_id):
                 return await self.get_user(user_id)
-            case SceneRef(scope=scope, type=scene_type, id=scene_id, parent_id=parent_id):
-                self._check_scope(scope)
+            case SceneRef(type=scene_type, id=scene_id, parent_id=parent_id):
                 return await self.get_scene(scene_type, scene_id, parent_scene_id=parent_id)
             case MemberRef(
-                scope=scope,
                 scene_id=scene_id,
                 scene_type=scene_type,
                 user_id=user_id,
                 scene_parent_id=scene_parent_id,
             ):
-                self._check_scope(scope)
                 return await self.get_member(scene_type, scene_parent_id or scene_id, user_id)
-            case _:
-                raise TypeError(f"unsupported ref: {ref!r}")
-
-    def _check_scope(self, scope: SupportScope) -> None:
-        interface_scope = SupportScope(self.basic_info()["scope"])
-        if scope != interface_scope:
-            raise ValueError(f"ref scope {scope!r} does not match interface scope {interface_scope!r}")
 
     async def get_user(self, user_id: str) -> User | None:
         """根据用户id获取用户信息
