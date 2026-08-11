@@ -60,6 +60,8 @@ class Interface:
                 return await self.get_user(user_id)
             case SceneRef(type=scene_type, id=scene_id, parent_id=parent_id):
                 return await self.get_scene(scene_type, scene_id, parent_scene_id=parent_id)
+            case MemberRef(scene_type=SceneType.PRIVATE):
+                return None
             case MemberRef(
                 scene_id=scene_id,
                 scene_type=scene_type,
