@@ -6,7 +6,6 @@ from nonebot.adapters.qq.event import (
     DirectMessageDeleteEvent,
     Event,
     GroupMessageCreateEvent,
-    GroupAtMessageCreateEvent,
     GuildEvent,
     GuildMemberEvent,
     GuildMessageEvent,
@@ -25,6 +24,12 @@ ROLES = {
     "2": ("ADMINISTRATOR", 10, "管理员"),
     "5": ("CHANNEL_ADMINISTRATOR", 8, "子频道管理员"),
     "1": ("MEMBER", 1, "成员"),
+}
+
+GROUP_ROLES = {
+    "owner": ("OWNER", 640, "群主"),
+    "admin": ("ADMINISTRATOR", 10, "管理员"),
+    "member": ("MEMBER", 1, "成员"),
 }
 
 
@@ -89,8 +94,9 @@ class InfoFetcher(BaseInfoFetcher):
 
     def extract_member(self, data, user: User | None):
         if "group_id" in data:
+            roles = [Role(*GROUP_ROLES[data["role"]])] if data.get("role") in GROUP_ROLES else []
             if user:
-                return Member(user, nick=data["nickname"])
+                return Member(user, nick=data["nickname"], roles=roles)
             return Member(
                 User(
                     id=data["user_id"],
@@ -98,6 +104,7 @@ class InfoFetcher(BaseInfoFetcher):
                     avatar=data.get("avatar"),
                 ),
                 nick=data["nickname"],
+                roles=roles,
             )
         if "guild_id" in data:
             if user:
@@ -298,6 +305,7 @@ async def _(bot: Bot, event: GroupMessageCreateEvent):
         "user_id": event.author.member_openid,
         "name": event.author.username,
         "nickname": "",
+        "role": getattr(event.author, "member_role", None),
         "avatar": f"https://q.qlogo.cn/qqapp/{bot.bot_info.id}/{event.author.member_openid}/640",
         "group_id": event.group_openid,
     }
